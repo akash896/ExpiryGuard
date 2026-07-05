@@ -1,17 +1,15 @@
 package com.akash.expiryguard.data.firebase
 
-import com.akash.expiryguard.data.ExpiryItem
-import com.akash.expiryguard.data.ExpiryItemRepository
-import com.google.android.gms.tasks.Task
+import com.akash.expiryguard.data.model.ExpiryItem
+import com.akash.expiryguard.data.repository.ExpiryItemRepository
+import com.akash.expiryguard.util.awaitResult
+import com.akash.expiryguard.util.awaitVoid
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 
 class FirebaseExpiryItemRepository(
     private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
@@ -105,38 +103,5 @@ class FirebaseExpiryItemRepository(
         return firestore.collection("users")
             .document(userId)
             .collection("items")
-    }
-}
-
-private suspend fun <T> Task<T>.awaitResult(): T {
-    return suspendCancellableCoroutine { continuation ->
-        addOnCompleteListener { task ->
-            if (task.isSuccessful) {
-                val result = task.result
-                if (result != null) {
-                    continuation.resume(result)
-                } else {
-                    continuation.resumeWithException(IllegalStateException("Firebase task returned no result."))
-                }
-            } else {
-                continuation.resumeWithException(
-                    task.exception ?: IllegalStateException("Firebase task failed.")
-                )
-            }
-        }
-    }
-}
-
-private suspend fun Task<Void>.awaitVoid() {
-    suspendCancellableCoroutine<Unit> { continuation ->
-        addOnCompleteListener { task ->
-            if (task.isSuccessful) {
-                continuation.resume(Unit)
-            } else {
-                continuation.resumeWithException(
-                    task.exception ?: IllegalStateException("Firebase task failed.")
-                )
-            }
-        }
     }
 }

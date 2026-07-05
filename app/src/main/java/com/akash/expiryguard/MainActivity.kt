@@ -20,7 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
-import com.akash.expiryguard.data.ExpiryItemRepository
+import com.akash.expiryguard.data.repository.ExpiryItemRepository
 import com.akash.expiryguard.ui.ExpiryGuardApp
 import com.akash.expiryguard.ui.theme.ExpiryGuardTheme
 import kotlinx.coroutines.launch
@@ -41,7 +41,7 @@ class MainActivity : ComponentActivity() {
             ExpiryGuardTheme {
                 when (val state = authState.value) {
                     AuthBootstrapState.Loading -> BootstrapStatusScreen("Signing you in...")
-                    AuthBootstrapState.Ready -> ExpiryGuardApp(repository = repository)
+                    AuthBootstrapState.Ready -> ExpiryGuardApp()
                     is AuthBootstrapState.Error -> BootstrapStatusScreen(
                         message = state.message,
                         isError = true

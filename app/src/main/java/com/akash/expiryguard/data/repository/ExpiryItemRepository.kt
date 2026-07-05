@@ -1,5 +1,6 @@
-package com.akash.expiryguard.data
+package com.akash.expiryguard.data.repository
 
+import com.akash.expiryguard.data.model.ExpiryItem
 import kotlinx.coroutines.flow.Flow
 
 interface ExpiryItemRepository {

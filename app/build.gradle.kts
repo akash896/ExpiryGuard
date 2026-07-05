@@ -54,6 +54,7 @@ dependencies {
     implementation(libs.androidx.work.runtime)
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
+    implementation(libs.kotlinx.coroutines.android)
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
