@@ -54,7 +54,7 @@ class MainActivity : ComponentActivity() {
     private fun signInAnonymously() {
         lifecycleScope.launch {
             authState.value = try {
-                repository.ensureSignedIn()
+                repository.signInAnonymouslyIfNeeded()
                 AuthBootstrapState.Ready
             } catch (error: Exception) {
                 AuthBootstrapState.Error(error.message ?: "Anonymous sign-in failed.")
