@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "899876108923",
+    "project_id": "expiryguard-f5a59",
+    "storage_bucket": "expiryguard-f5a59.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:899876108923:android:47f8e58f56c09ee67a40de",
+        "android_client_info": {
+          "package_name": "com.akash.expiryguard"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB2VVHP-S6T4B3FYHrg6z8-pdzWVkWmcBQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
