@@ -1,22 +1,37 @@
 package com.akash.expiryguard.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.akash.expiryguard.data.repository.ExpiryItemRepository
 import com.akash.expiryguard.ui.screens.addedit.AddEditItemScreen
 import com.akash.expiryguard.ui.screens.detail.ItemDetailScreen
 import com.akash.expiryguard.ui.screens.home.HomeScreen
+import com.akash.expiryguard.ui.screens.home.HomeViewModel
 import com.akash.expiryguard.ui.screens.settings.SettingsScreen
 
 @Composable
-fun ExpiryGuardNavHost(navController: NavHostController) {
+fun ExpiryGuardNavHost(
+    navController: NavHostController,
+    repository: ExpiryItemRepository
+) {
     NavHost(
         navController = navController,
         startDestination = ExpiryGuardDestination.HOME
     ) {
         composable(ExpiryGuardDestination.HOME) {
-            HomeScreen()
+            val viewModel: HomeViewModel = viewModel(
+                factory = HomeViewModel.Factory(repository)
+            )
+            HomeScreen(
+                viewModel = viewModel,
+                onAddItemClick = { navController.navigate(ExpiryGuardDestination.ADD_EDIT) },
+                onItemClick = { itemId -> navController.navigate(ExpiryGuardDestination.detail(itemId)) },
+                onSettingsClick = { navController.navigate(ExpiryGuardDestination.SETTINGS) },
+                onExpenseInsightsClick = { }
+            )
         }
 
         composable(ExpiryGuardDestination.ADD_EDIT) {

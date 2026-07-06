@@ -41,7 +41,7 @@ class MainActivity : ComponentActivity() {
             ExpiryGuardTheme {
                 when (val state = authState.value) {
                     AuthBootstrapState.Loading -> BootstrapStatusScreen("Signing you in...")
-                    AuthBootstrapState.Ready -> ExpiryGuardApp()
+                    AuthBootstrapState.Ready -> ExpiryGuardApp(repository = repository)
                     is AuthBootstrapState.Error -> BootstrapStatusScreen(
                         message = state.message,
                         isError = true
