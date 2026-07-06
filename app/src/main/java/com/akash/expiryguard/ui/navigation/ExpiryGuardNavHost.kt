@@ -8,6 +8,8 @@ import androidx.navigation.compose.composable
 import com.akash.expiryguard.data.repository.ExpiryItemRepository
 import com.akash.expiryguard.ui.screens.addedit.AddEditItemScreen
 import com.akash.expiryguard.ui.screens.detail.ItemDetailScreen
+import com.akash.expiryguard.ui.screens.expenses.ExpenseInsightsScreen
+import com.akash.expiryguard.ui.screens.expenses.ExpenseInsightsViewModel
 import com.akash.expiryguard.ui.screens.home.HomeScreen
 import com.akash.expiryguard.ui.screens.home.HomeViewModel
 import com.akash.expiryguard.ui.screens.settings.SettingsScreen
@@ -30,7 +32,17 @@ fun ExpiryGuardNavHost(
                 onAddItemClick = { navController.navigate(ExpiryGuardDestination.ADD_EDIT) },
                 onItemClick = { itemId -> navController.navigate(ExpiryGuardDestination.detail(itemId)) },
                 onSettingsClick = { navController.navigate(ExpiryGuardDestination.SETTINGS) },
-                onExpenseInsightsClick = { }
+                onExpenseInsightsClick = { navController.navigate(ExpiryGuardDestination.EXPENSE_INSIGHTS) }
+            )
+        }
+
+        composable(ExpiryGuardDestination.EXPENSE_INSIGHTS) {
+            val viewModel: ExpenseInsightsViewModel = viewModel(
+                factory = ExpenseInsightsViewModel.Factory(repository)
+            )
+            ExpenseInsightsScreen(
+                viewModel = viewModel,
+                onNavigateBack = { navController.popBackStack() }
             )
         }
 
