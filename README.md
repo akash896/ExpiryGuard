@@ -16,6 +16,7 @@ ExpiryGuard is an Android app for tracking the expiry dates, value, and lifecycl
 - Each item has a Notify switch, and the notification itself has a Stop action that disables reminders for that item.
 - Expired items are shown under the dynamic Expired category without losing their original category for expense history. Expired can also be chosen when adding an item.
 - Settings shows account and notification status, supports a manual reminder check, archives items expired more than 30 days after confirmation, and stores the selected light or dark theme locally.
+- The launcher icon uses `ExpiryGuard_Icon_v2.png` with density-specific standard and round Android resources.
 
 ## Technology
 
