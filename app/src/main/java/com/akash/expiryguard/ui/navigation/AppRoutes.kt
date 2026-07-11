@@ -13,6 +13,7 @@ object AppRoutes {
     const val DETAIL = "detail/{$ITEM_ID}"
     const val SETTINGS = "settings"
     const val EXPENSE_INSIGHTS = "expense_insights"
+    const val CALENDAR = "calendar"
 
     fun editItem(itemId: String): String = "edit_item/${Uri.encode(itemId)}"
 

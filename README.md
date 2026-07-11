@@ -9,6 +9,7 @@ ExpiryGuard is an Android app for tracking the expiry dates, value, and lifecycl
 - Cloud Firestore stores each user's data at `users/{userId}/items/{itemId}`.
 - Home groups active items by expiry urgency and provides search, category filters, and value summaries.
 - Home includes Quick Add templates for common food, medicine, document, warranty, and subscription items.
+- Calendar View shows upcoming expiries by month, highlights dates with expiring items, and opens item details from a selected date.
 - Add/Edit supports name, category, expiry date, optional purchase date, quantity, price, currency, reminder period, and notes.
 - Expense Insights groups spending and value by daily, monthly, quarterly, or annual purchase periods.
 - Item Detail shows all saved fields, expiry timing, created/updated timestamps, value state, and lifecycle actions.
@@ -105,6 +106,7 @@ Route constants live in `ui/navigation/AppRoutes.kt`. The navigation graph in `u
 - `detail/{itemId}`
 - `settings`
 - `expense_insights`
+- `calendar`
 - `onboarding`
 
 The Home add button opens `add_item`. Tapping an item opens its detail page, where Edit opens `edit_item/{itemId}`. Saving an item, deleting an item, or archiving an item returns to the previous screen.
@@ -112,6 +114,10 @@ The Home add button opens `add_item`. Tapping an item opens its detail page, whe
 ## Quick Add
 
 Quick Add templates on Home open the regular Add Item form with a name, category, reminder period, and today's purchase date prefilled. Expiry date remains empty and must be reviewed before saving. Templates do not save an item automatically.
+
+## Calendar View
+
+Open Calendar from Home to browse a month of expiry dates. Dates with items have an indicator; expired dates use a danger indicator and today is highlighted. Select a date to view its expiring items, then tap an item to open its detail screen.
 
 ## Notifications
 

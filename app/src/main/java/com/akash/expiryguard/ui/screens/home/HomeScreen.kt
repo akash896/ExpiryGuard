@@ -51,6 +51,7 @@ fun HomeScreen(
     onAddItemClick: () -> Unit,
     onQuickAddClick: (QuickAddTemplate) -> Unit,
     onItemClick: (String) -> Unit,
+    onCalendarClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onExpenseInsightsClick: () -> Unit
 ) {
@@ -68,6 +69,7 @@ fun HomeScreen(
         onAddItemClick = onAddItemClick,
         onQuickAddClick = onQuickAddClick,
         onItemClick = onItemClick,
+        onCalendarClick = onCalendarClick,
         onSettingsClick = onSettingsClick,
         onExpenseInsightsClick = onExpenseInsightsClick
     )
@@ -83,6 +85,7 @@ private fun HomeScreenContent(
     onAddItemClick: () -> Unit,
     onQuickAddClick: (QuickAddTemplate) -> Unit,
     onItemClick: (String) -> Unit,
+    onCalendarClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onExpenseInsightsClick: () -> Unit
 ) {
@@ -91,6 +94,9 @@ private fun HomeScreenContent(
             TopAppBar(
                 title = { Text(text = "ExpiryGuard") },
                 actions = {
+                    TextButton(onClick = onCalendarClick) {
+                        Text(text = "Calendar")
+                    }
                     TextButton(onClick = onExpenseInsightsClick) {
                         Text(text = "Insights")
                     }

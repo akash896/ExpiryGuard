@@ -12,6 +12,8 @@ import com.akash.expiryguard.data.model.QuickAddTemplates
 import com.akash.expiryguard.data.repository.ExpiryItemRepository
 import com.akash.expiryguard.ui.screens.addedit.AddEditItemScreen
 import com.akash.expiryguard.ui.screens.addedit.AddEditItemViewModel
+import com.akash.expiryguard.ui.screens.calendar.CalendarScreen
+import com.akash.expiryguard.ui.screens.calendar.CalendarViewModel
 import com.akash.expiryguard.ui.screens.detail.ItemDetailScreen
 import com.akash.expiryguard.ui.screens.detail.ItemDetailViewModel
 import com.akash.expiryguard.ui.screens.expenses.ExpenseInsightsScreen
@@ -60,6 +62,7 @@ fun AppNavGraph(
                     navController.navigate(AppRoutes.addItem(template.templateId))
                 },
                 onItemClick = { itemId -> navController.navigate(AppRoutes.detail(itemId)) },
+                onCalendarClick = { navController.navigate(AppRoutes.CALENDAR) },
                 onSettingsClick = { navController.navigate(AppRoutes.SETTINGS) },
                 onExpenseInsightsClick = { navController.navigate(AppRoutes.EXPENSE_INSIGHTS) }
             )
@@ -122,6 +125,17 @@ fun AppNavGraph(
                 useDarkTheme = useDarkTheme,
                 onThemeChange = onThemeChange,
                 onNavigateBack = navController::popBackStack
+            )
+        }
+
+        composable(AppRoutes.CALENDAR) {
+            val viewModel: CalendarViewModel = viewModel(
+                factory = CalendarViewModel.Factory(repository)
+            )
+            CalendarScreen(
+                viewModel = viewModel,
+                onNavigateBack = navController::popBackStack,
+                onItemClick = { itemId -> navController.navigate(AppRoutes.detail(itemId)) }
             )
         }
 
