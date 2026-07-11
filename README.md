@@ -15,6 +15,7 @@ ExpiryGuard is an Android app for tracking the expiry dates, value, and lifecycl
 - An 8:00 AM alarm enqueues the Firebase-backed WorkManager check while items are within their configured reminder window.
 - Each item has a Notify switch, and the notification itself has a Stop action that disables reminders for that item.
 - Expired items are shown under the dynamic Expired category without losing their original category for expense history. Expired can also be chosen when adding an item.
+- Settings shows account and notification status, supports a manual reminder check, archives items expired more than 30 days after confirmation, and stores the selected light or dark theme locally.
 
 ## Technology
 
@@ -111,6 +112,10 @@ If the device was off at 8:00 AM, the boot receiver reschedules the next alarm a
 ## Expired Category
 
 The Expired filter includes any item whose expiry date has passed, plus items deliberately saved with the `Expired` category. This is a dynamic display category: automatically expired items keep their original stored category so existing expense breakdowns remain meaningful.
+
+## Settings
+
+Settings identifies the anonymous session, notification access, Firebase storage, and local use of price data. It can enqueue a reminder check for testing and archive active items whose expiry date is more than 30 days old after confirmation. The light/dark theme choice is saved locally and applies throughout the app.
 
 ## Development notes
 

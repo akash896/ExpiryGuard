@@ -26,6 +26,7 @@ import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private val authState = mutableStateOf<AuthBootstrapState>(AuthBootstrapState.Loading)
+    private val useDarkTheme = mutableStateOf(false)
     private lateinit var repository: ExpiryItemRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -33,14 +34,20 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         repository = (application as ExpiryGuardApplication).container.itemRepository
+        useDarkTheme.value = getSharedPreferences(THEME_PREFERENCES, MODE_PRIVATE)
+            .getBoolean(DARK_THEME_KEY, false)
         requestNotificationPermissionIfNeeded()
         signInAnonymously()
 
         setContent {
-            ExpiryGuardTheme {
+            ExpiryGuardTheme(darkTheme = useDarkTheme.value, dynamicColor = false) {
                 when (val state = authState.value) {
                     AuthBootstrapState.Loading -> BootstrapStatusScreen("Signing you in...")
-                    AuthBootstrapState.Ready -> ExpiryGuardApp(repository = repository)
+                    AuthBootstrapState.Ready -> ExpiryGuardApp(
+                        repository = repository,
+                        useDarkTheme = useDarkTheme.value,
+                        onThemeChange = ::setDarkTheme
+                    )
                     is AuthBootstrapState.Error -> BootstrapStatusScreen(
                         message = state.message,
                         isError = true
@@ -73,8 +80,18 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun setDarkTheme(enabled: Boolean) {
+        useDarkTheme.value = enabled
+        getSharedPreferences(THEME_PREFERENCES, MODE_PRIVATE)
+            .edit()
+            .putBoolean(DARK_THEME_KEY, enabled)
+            .apply()
+    }
+
     private companion object {
         const val NOTIFICATION_PERMISSION_REQUEST_CODE = 42
+        const val THEME_PREFERENCES = "app_theme"
+        const val DARK_THEME_KEY = "dark_theme"
     }
 }
 

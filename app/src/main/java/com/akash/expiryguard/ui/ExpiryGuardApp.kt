@@ -6,10 +6,16 @@ import com.akash.expiryguard.data.repository.ExpiryItemRepository
 import com.akash.expiryguard.ui.navigation.AppNavGraph
 
 @Composable
-fun ExpiryGuardApp(repository: ExpiryItemRepository) {
+fun ExpiryGuardApp(
+    repository: ExpiryItemRepository,
+    useDarkTheme: Boolean,
+    onThemeChange: (Boolean) -> Unit
+) {
     val navController = rememberNavController()
     AppNavGraph(
         navController = navController,
-        repository = repository
+        repository = repository,
+        useDarkTheme = useDarkTheme,
+        onThemeChange = onThemeChange
     )
 }

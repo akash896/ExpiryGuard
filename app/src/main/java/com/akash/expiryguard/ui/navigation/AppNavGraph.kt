@@ -17,11 +17,14 @@ import com.akash.expiryguard.ui.screens.expenses.ExpenseInsightsViewModel
 import com.akash.expiryguard.ui.screens.home.HomeScreen
 import com.akash.expiryguard.ui.screens.home.HomeViewModel
 import com.akash.expiryguard.ui.screens.settings.SettingsScreen
+import com.akash.expiryguard.ui.screens.settings.SettingsViewModel
 
 @Composable
 fun AppNavGraph(
     navController: NavHostController,
-    repository: ExpiryItemRepository
+    repository: ExpiryItemRepository,
+    useDarkTheme: Boolean,
+    onThemeChange: (Boolean) -> Unit
 ) {
     NavHost(
         navController = navController,
@@ -74,7 +77,15 @@ fun AppNavGraph(
         }
 
         composable(AppRoutes.SETTINGS) {
-            SettingsScreen(onNavigateBack = navController::popBackStack)
+            val viewModel: SettingsViewModel = viewModel(
+                factory = SettingsViewModel.Factory(repository)
+            )
+            SettingsScreen(
+                viewModel = viewModel,
+                useDarkTheme = useDarkTheme,
+                onThemeChange = onThemeChange,
+                onNavigateBack = navController::popBackStack
+            )
         }
 
         composable(AppRoutes.EXPENSE_INSIGHTS) {
