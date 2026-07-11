@@ -3,14 +3,17 @@ package com.akash.expiryguard.ui.screens.addedit
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.akash.expiryguard.data.local.AppPreferences
 import com.akash.expiryguard.data.model.ExpiryCategory
 import com.akash.expiryguard.data.model.ExpiryItem
+import com.akash.expiryguard.data.model.NotificationSettings
 import com.akash.expiryguard.data.model.QuickAddTemplate
 import com.akash.expiryguard.data.repository.ExpiryItemRepository
 import com.akash.expiryguard.util.formatIsoDate
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -18,6 +21,7 @@ import java.time.LocalDate
 class AddEditItemViewModel(
     private val repository: ExpiryItemRepository,
     private val itemId: String?,
+    private val appPreferences: AppPreferences,
     template: QuickAddTemplate? = null
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(
@@ -28,21 +32,39 @@ class AddEditItemViewModel(
         }
     )
     val uiState: StateFlow<AddEditItemUiState> = _uiState.asStateFlow()
+    private var notificationSettings = NotificationSettings()
+    private var reminderDaysManuallyChanged = !itemId.isNullOrBlank() || template != null
 
     init {
         if (!itemId.isNullOrBlank()) {
             loadItem(itemId)
+        } else {
+            observeNotificationSettings()
         }
     }
 
     fun onNameChange(value: String) = updateState { copy(name = value, nameError = null) }
-    fun onCategoryChange(value: String) = updateState { copy(category = value) }
+    fun onCategoryChange(value: String) = updateState {
+        copy(
+            category = value,
+            reminderDaysBefore = reminderDaysForCategoryChange(
+                currentReminderDays = reminderDaysBefore,
+                category = value,
+                reminderDaysManuallyChanged = reminderDaysManuallyChanged,
+                notificationSettings = notificationSettings
+            ),
+            reminderError = null
+        )
+    }
     fun onExpiryDateChange(value: String) = updateState { copy(expiryDate = value, expiryDateError = null) }
     fun onPurchaseDateChange(value: String) = updateState { copy(purchaseDate = value) }
     fun onQuantityChange(value: String) = updateState { copy(quantity = value) }
     fun onPriceChange(value: String) = updateState { copy(price = value, priceError = null) }
     fun onCurrencyChange(value: String) = updateState { copy(currency = value.ifBlank { "INR" }) }
-    fun onReminderDaysBeforeChange(value: Int) = updateState { copy(reminderDaysBefore = value, reminderError = null) }
+    fun onReminderDaysBeforeChange(value: Int) {
+        reminderDaysManuallyChanged = true
+        updateState { copy(reminderDaysBefore = value, reminderError = null) }
+    }
     fun onNotificationsEnabledChange(value: Boolean) = updateState { copy(notificationsEnabled = value) }
     fun onNotesChange(value: String) = updateState { copy(notes = value) }
 
@@ -120,6 +142,19 @@ class AddEditItemViewModel(
         }
     }
 
+    private fun observeNotificationSettings() {
+        viewModelScope.launch {
+            appPreferences.notificationSettings.collect { settings ->
+                notificationSettings = settings
+                if (!reminderDaysManuallyChanged) {
+                    _uiState.update { state ->
+                        state.copy(reminderDaysBefore = settings.reminderDaysFor(state.category))
+                    }
+                }
+            }
+        }
+    }
+
     private fun updateState(transform: AddEditItemUiState.() -> AddEditItemUiState) {
         _uiState.update { it.transform() }
     }
@@ -127,11 +162,12 @@ class AddEditItemViewModel(
     class Factory(
         private val repository: ExpiryItemRepository,
         private val itemId: String?,
+        private val appPreferences: AppPreferences,
         private val template: QuickAddTemplate? = null
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return AddEditItemViewModel(repository, itemId, template) as T
+            return AddEditItemViewModel(repository, itemId, appPreferences, template) as T
         }
     }
 }
@@ -213,5 +249,18 @@ data class AddEditItemUiState(
                 isLoading = false
             )
         }
+    }
+}
+
+internal fun reminderDaysForCategoryChange(
+    currentReminderDays: Int,
+    category: String,
+    reminderDaysManuallyChanged: Boolean,
+    notificationSettings: NotificationSettings
+): Int {
+    return if (reminderDaysManuallyChanged) {
+        currentReminderDays
+    } else {
+        notificationSettings.reminderDaysFor(category)
     }
 }

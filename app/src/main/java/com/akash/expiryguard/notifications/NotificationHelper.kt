@@ -22,6 +22,7 @@ object NotificationHelper {
     const val EXTRA_NOTIFICATION_ID = "notification_id"
     private const val NOTIFICATION_PREFERENCES = "expiry_reminder_notifications"
     private const val STOPPED_REMINDERS_PREFERENCES = "stopped_expiry_reminders"
+    private const val TEST_NOTIFICATION_ID = 802
 
     fun createReminderChannel(context: Context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
@@ -78,6 +79,26 @@ object NotificationHelper {
         return try {
             NotificationManagerCompat.from(context).notify(reminderNotificationId, notification)
             preferences.edit().putBoolean(notificationKey, true).apply()
+            true
+        } catch (_: SecurityException) {
+            false
+        }
+    }
+
+    fun showTestNotification(context: Context): Boolean {
+        if (!canPostNotifications(context)) return false
+
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_stat_expiry_reminder)
+            .setContentTitle("ExpiryGuard test reminder")
+            .setContentText("Notifications are ready for your expiry reminders.")
+            .setContentIntent(createContentIntent(context, TEST_NOTIFICATION_ID))
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .build()
+
+        return try {
+            NotificationManagerCompat.from(context).notify(TEST_NOTIFICATION_ID, notification)
             true
         } catch (_: SecurityException) {
             false

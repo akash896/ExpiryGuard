@@ -15,8 +15,6 @@ class ReminderBootReceiver : BroadcastReceiver() {
         if (!supportedAction) return
 
         ExpiryReminderScheduler.scheduleDaily(context)
-        if (ExpiryReminderScheduler.hasMissedTodayReminderTime()) {
-            ExpiryReminderScheduler.enqueueReminderCheck(context)
-        }
+        ExpiryReminderScheduler.enqueueReminderCheck(context)
     }
 }

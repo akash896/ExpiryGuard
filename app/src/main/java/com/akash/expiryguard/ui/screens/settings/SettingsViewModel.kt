@@ -3,21 +3,57 @@ package com.akash.expiryguard.ui.screens.settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.akash.expiryguard.data.local.AppPreferences
+import com.akash.expiryguard.data.model.NotificationSettings
 import com.akash.expiryguard.data.repository.ExpiryItemRepository
 import com.akash.expiryguard.util.parseIsoDate
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
 class SettingsViewModel(
-    private val repository: ExpiryItemRepository
+    private val repository: ExpiryItemRepository,
+    private val appPreferences: AppPreferences
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            appPreferences.notificationSettings.collect { notificationSettings ->
+                _uiState.update { it.copy(notificationSettings = notificationSettings) }
+            }
+        }
+    }
+
+    fun updateReminderCheckTime(hour: Int, minute: Int) {
+        viewModelScope.launch {
+            try {
+                appPreferences.updateReminderCheckTime(hour, minute)
+            } catch (error: Exception) {
+                _uiState.update {
+                    it.copy(errorMessage = error.message ?: "Unable to save reminder time.")
+                }
+            }
+        }
+    }
+
+    fun updateCategoryReminderDays(category: String, reminderDays: Int) {
+        viewModelScope.launch {
+            try {
+                appPreferences.updateCategoryReminderDays(category, reminderDays)
+            } catch (error: Exception) {
+                _uiState.update {
+                    it.copy(errorMessage = error.message ?: "Unable to save category reminder.")
+                }
+            }
+        }
+    }
 
     fun archiveExpiredItemsOlderThan30Days() {
         if (_uiState.value.isArchiving) return
@@ -62,16 +98,18 @@ class SettingsViewModel(
     }
 
     class Factory(
-        private val repository: ExpiryItemRepository
+        private val repository: ExpiryItemRepository,
+        private val appPreferences: AppPreferences
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return SettingsViewModel(repository) as T
+            return SettingsViewModel(repository, appPreferences) as T
         }
     }
 }
 
 data class SettingsUiState(
+    val notificationSettings: NotificationSettings = NotificationSettings(),
     val isArchiving: Boolean = false,
     val successMessage: String? = null,
     val errorMessage: String? = null

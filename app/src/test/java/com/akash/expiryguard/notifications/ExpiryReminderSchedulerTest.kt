@@ -7,16 +7,22 @@ import java.time.ZonedDateTime
 
 class ExpiryReminderSchedulerTest {
     @Test
-    fun delayUntilNextEightAm_usesTodayWhenEightAmIsStillAhead() {
+    fun delayUntilNextReminderTime_usesTodayWhenSelectedTimeIsStillAhead() {
         val now = ZonedDateTime.parse("2026-07-11T06:00:00+05:30[Asia/Kolkata]")
 
-        assertEquals(Duration.ofHours(2).toMillis(), ExpiryReminderScheduler.delayUntilNextEightAm(now))
+        assertEquals(
+            Duration.ofHours(3).toMillis(),
+            ExpiryReminderScheduler.delayUntilNextReminderTime(9, 0, now)
+        )
     }
 
     @Test
-    fun delayUntilNextEightAm_usesTomorrowAtOrAfterEightAm() {
-        val now = ZonedDateTime.parse("2026-07-11T08:00:00+05:30[Asia/Kolkata]")
+    fun delayUntilNextReminderTime_usesTomorrowAtOrAfterSelectedTime() {
+        val now = ZonedDateTime.parse("2026-07-11T09:30:00+05:30[Asia/Kolkata]")
 
-        assertEquals(Duration.ofDays(1).toMillis(), ExpiryReminderScheduler.delayUntilNextEightAm(now))
+        assertEquals(
+            Duration.ofHours(23).plusMinutes(30).toMillis(),
+            ExpiryReminderScheduler.delayUntilNextReminderTime(9, 0, now)
+        )
     }
 }

@@ -77,6 +77,7 @@ fun AppNavGraph(
         ) { backStackEntry ->
             AddEditDestination(
                 repository = repository,
+                appPreferences = appPreferences,
                 itemId = null,
                 templateId = backStackEntry.arguments?.getString(AppRoutes.TEMPLATE_ID),
                 onNavigateBack = navController::popBackStack
@@ -90,6 +91,7 @@ fun AppNavGraph(
             val itemId = requireNotNull(backStackEntry.arguments?.getString(AppRoutes.ITEM_ID))
             AddEditDestination(
                 repository = repository,
+                appPreferences = appPreferences,
                 itemId = itemId,
                 templateId = null,
                 onNavigateBack = navController::popBackStack
@@ -113,7 +115,7 @@ fun AppNavGraph(
 
         composable(AppRoutes.SETTINGS) {
             val viewModel: SettingsViewModel = viewModel(
-                factory = SettingsViewModel.Factory(repository)
+                factory = SettingsViewModel.Factory(repository, appPreferences)
             )
             SettingsScreen(
                 viewModel = viewModel,
@@ -138,6 +140,7 @@ fun AppNavGraph(
 @Composable
 private fun AddEditDestination(
     repository: ExpiryItemRepository,
+    appPreferences: AppPreferences,
     itemId: String?,
     templateId: String?,
     onNavigateBack: () -> Unit
@@ -146,6 +149,7 @@ private fun AddEditDestination(
         factory = AddEditItemViewModel.Factory(
             repository = repository,
             itemId = itemId,
+            appPreferences = appPreferences,
             template = QuickAddTemplates.find(templateId)
         )
     )

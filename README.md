@@ -14,7 +14,7 @@ ExpiryGuard is an Android app for tracking the expiry dates, value, and lifecycl
 - Item Detail shows all saved fields, expiry timing, created/updated timestamps, value state, and lifecycle actions.
 - An item can be marked consumed, restored to not consumed, archived, or deleted. Archiving and deleting require confirmation.
 - Navigation uses explicit routes for Home, Add Item, Edit Item, Item Detail, Settings, and Expense Insights. Screens other than Home provide a back action in the top app bar.
-- An 8:00 AM alarm enqueues the Firebase-backed WorkManager check while items are within their configured reminder window.
+- Settings provides a preferred daily reminder-check time and category-specific default reminder periods.
 - Each item has a Notify switch, and the notification itself has a Stop action that disables reminders for that item.
 - Expired items are shown under the dynamic Expired category without losing their original category for expense history. Expired can also be chosen when adding an item.
 - Settings shows account and notification status, supports a manual reminder check, archives items expired more than 30 days after confirmation, and stores the selected light or dark theme locally.
@@ -27,7 +27,7 @@ ExpiryGuard is an Android app for tracking the expiry dates, value, and lifecycl
 - Navigation Compose
 - Firebase Authentication and Cloud Firestore, managed through the Firebase BoM
 - Kotlin coroutines and `Flow`
-- WorkManager is configured as a dependency for the forthcoming daily reminder worker
+- WorkManager runs the daily Firebase-backed reminder check
 - Minimum Android SDK: 26
 - Application ID: `com.akash.expiryguard`
 
@@ -115,11 +115,11 @@ Quick Add templates on Home open the regular Add Item form with a name, category
 
 ## Notifications
 
-ExpiryGuard creates an `expiry_reminders` notification channel on Android 8.0+. On Android 13+, the final onboarding page explains the benefit and offers the `POST_NOTIFICATIONS` permission request. An alarm is scheduled for 8:00 AM each day and enqueues the Firebase-backed WorkManager check. The manifest requests Android's exact-alarm access; when Android does not grant it, the app falls back to an inexact alarm near 8:00 AM.
+ExpiryGuard creates an `expiry_reminders` notification channel on Android 8.0+. On Android 13+, the final onboarding page explains the benefit and offers the `POST_NOTIFICATIONS` permission request. Settings stores a preferred daily check time locally, defaulting to 09:00, and WorkManager schedules the Firebase-backed check near that time. Android can defer background work, so this is a best-effort schedule rather than an exact alarm.
 
 An item is eligible from the configured reminder day through its expiry day, and receives at most one reminder per day. The notification includes a Stop action that disables the item's `notificationsEnabled` flag in Firestore, records a local stop marker for offline reliability, and removes the current alert. The Notify switch on a Home card or Add/Edit screen can enable reminders again. Notification text includes the category, expiry date, and price as a possible expired value when available.
 
-If the device was off at 8:00 AM, the boot receiver reschedules the next alarm and runs one missed reminder check after boot. Android can still defer background work when network access is unavailable, and exact timing requires the user to allow exact alarms in system settings on Android 12+.
+After device boot or a system time change, ExpiryGuard reschedules the daily WorkManager job and queues one check. Android can still defer background work when network access is unavailable.
 
 ## Expired Category
 
@@ -127,7 +127,7 @@ The Expired filter includes any item whose expiry date has passed, plus items de
 
 ## Settings
 
-Settings identifies the anonymous session, notification access, Firebase storage, and local use of price data. It can enqueue a reminder check for testing and archive active items whose expiry date is more than 30 days old after confirmation. The light/dark theme choice is saved locally and applies throughout the app.
+Settings identifies the anonymous session, notification access, Firebase storage, and local use of price data. It lets you select the preferred reminder-check time, set category reminder defaults for new items, run an expiry check, send a test notification, and archive active items whose expiry date is more than 30 days old after confirmation. The light/dark theme choice is saved locally and applies throughout the app.
 
 ## Development notes
 

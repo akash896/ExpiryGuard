@@ -1,51 +1,54 @@
 package com.akash.expiryguard.notifications
 
-import android.app.AlarmManager
-import android.app.PendingIntent
 import android.content.Context
-import android.content.Intent
-import android.os.Build
 import androidx.work.Constraints
 import androidx.work.ExistingWorkPolicy
+import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import com.akash.expiryguard.data.local.AppPreferences
+import com.akash.expiryguard.data.model.NotificationSettings
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import java.time.Duration
-import java.time.LocalTime
 import java.time.ZonedDateTime
+import java.util.concurrent.TimeUnit
 
 object ExpiryReminderScheduler {
-    private const val LEGACY_PERIODIC_WORK_NAME = "daily_expiry_reminders"
+    private const val DAILY_REMINDER_WORK_NAME = "daily_expiry_reminders"
     private const val REMINDER_CHECK_WORK_NAME = "expiry_reminder_check"
-    private const val ALARM_REQUEST_CODE = 801
-    private const val REMINDER_HOUR = 8
 
     fun scheduleDaily(context: Context) {
         val applicationContext = context.applicationContext
-        val alarmManager = applicationContext.getSystemService(AlarmManager::class.java)
-        val pendingIntent = alarmPendingIntent(applicationContext)
-        val triggerAtMillis = System.currentTimeMillis() + delayUntilNextEightAm()
-
-        alarmManager.cancel(pendingIntent)
-        when {
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms() -> {
-                alarmManager.setAndAllowWhileIdle(
-                    AlarmManager.RTC_WAKEUP,
-                    triggerAtMillis,
-                    pendingIntent
-                )
-            }
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.M -> {
-                alarmManager.setExactAndAllowWhileIdle(
-                    AlarmManager.RTC_WAKEUP,
-                    triggerAtMillis,
-                    pendingIntent
-                )
-            }
-            else -> alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
+        CoroutineScope(Dispatchers.Default).launch {
+            val settings = AppPreferences(applicationContext).notificationSettings.first()
+            scheduleDaily(applicationContext, settings)
         }
+    }
 
-        WorkManager.getInstance(applicationContext).cancelUniqueWork(LEGACY_PERIODIC_WORK_NAME)
+    fun scheduleDaily(context: Context, settings: NotificationSettings) {
+        val applicationContext = context.applicationContext
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+        val delay = delayUntilNextReminderTime(
+            hour = settings.reminderCheckHour,
+            minute = settings.reminderCheckMinute
+        )
+        val request = PeriodicWorkRequestBuilder<ExpiryReminderWorker>(1, TimeUnit.DAYS)
+            .setConstraints(constraints)
+            .setInitialDelay(delay, TimeUnit.MILLISECONDS)
+            .build()
+
+        WorkManager.getInstance(applicationContext).enqueueUniquePeriodicWork(
+            DAILY_REMINDER_WORK_NAME,
+            ExistingPeriodicWorkPolicy.UPDATE,
+            request
+        )
     }
 
     fun enqueueReminderCheck(context: Context) {
@@ -64,24 +67,17 @@ object ExpiryReminderScheduler {
         )
     }
 
-    internal fun delayUntilNextEightAm(now: ZonedDateTime = ZonedDateTime.now()): Long {
-        var nextRun = now.toLocalDate().atTime(REMINDER_HOUR, 0).atZone(now.zone)
+    internal fun delayUntilNextReminderTime(
+        hour: Int,
+        minute: Int,
+        now: ZonedDateTime = ZonedDateTime.now()
+    ): Long {
+        var nextRun = now.toLocalDate()
+            .atTime(hour.coerceIn(0, 23), minute.coerceIn(0, 59))
+            .atZone(now.zone)
         if (!nextRun.isAfter(now)) {
             nextRun = nextRun.plusDays(1)
         }
         return Duration.between(now, nextRun).toMillis()
-    }
-
-    internal fun hasMissedTodayReminderTime(now: ZonedDateTime = ZonedDateTime.now()): Boolean {
-        return !now.toLocalTime().isBefore(LocalTime.of(REMINDER_HOUR, 0))
-    }
-
-    private fun alarmPendingIntent(context: Context): PendingIntent {
-        return PendingIntent.getBroadcast(
-            context,
-            ALARM_REQUEST_CODE,
-            Intent(context, ExpiryReminderAlarmReceiver::class.java),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
     }
 }
