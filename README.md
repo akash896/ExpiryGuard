@@ -11,6 +11,7 @@ ExpiryGuard is an Android app for tracking the expiry dates, value, and lifecycl
 - Expense Insights groups spending and value by daily, monthly, quarterly, or annual purchase periods.
 - Item Detail shows all saved fields, expiry timing, created/updated timestamps, value state, and lifecycle actions.
 - An item can be marked consumed, restored to not consumed, archived, or deleted. Archiving and deleting require confirmation.
+- Navigation uses explicit routes for Home, Add Item, Edit Item, Item Detail, Settings, and Expense Insights. Screens other than Home provide a back action in the top app bar.
 
 ## Technology
 
@@ -82,6 +83,19 @@ app/src/main/java/com/akash/expiryguard/
   util/                Date, expense, and Firebase task helpers
   notifications/       Reserved for the reminder worker and notification channel
 ```
+
+## Navigation
+
+Route constants live in `ui/navigation/AppRoutes.kt`. The navigation graph in `ui/navigation/AppNavGraph.kt` provides these routes:
+
+- `home`
+- `add_item`
+- `edit_item/{itemId}`
+- `detail/{itemId}`
+- `settings`
+- `expense_insights`
+
+The Home add button opens `add_item`. Tapping an item opens its detail page, where Edit opens `edit_item/{itemId}`. Saving an item, deleting an item, or archiving an item returns to the previous screen.
 
 ## Development notes
 
