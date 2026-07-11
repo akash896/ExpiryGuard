@@ -2,11 +2,14 @@ package com.akash.expiryguard.ui.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavType
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
 import com.akash.expiryguard.data.repository.ExpiryItemRepository
 import com.akash.expiryguard.ui.screens.addedit.AddEditItemScreen
+import com.akash.expiryguard.ui.screens.addedit.AddEditItemViewModel
 import com.akash.expiryguard.ui.screens.detail.ItemDetailScreen
 import com.akash.expiryguard.ui.screens.expenses.ExpenseInsightsScreen
 import com.akash.expiryguard.ui.screens.expenses.ExpenseInsightsViewModel
@@ -29,7 +32,7 @@ fun ExpiryGuardNavHost(
             )
             HomeScreen(
                 viewModel = viewModel,
-                onAddItemClick = { navController.navigate(ExpiryGuardDestination.ADD_EDIT) },
+                onAddItemClick = { navController.navigate(ExpiryGuardDestination.addEdit()) },
                 onItemClick = { itemId -> navController.navigate(ExpiryGuardDestination.detail(itemId)) },
                 onSettingsClick = { navController.navigate(ExpiryGuardDestination.SETTINGS) },
                 onExpenseInsightsClick = { navController.navigate(ExpiryGuardDestination.EXPENSE_INSIGHTS) }
@@ -46,8 +49,25 @@ fun ExpiryGuardNavHost(
             )
         }
 
-        composable(ExpiryGuardDestination.ADD_EDIT) {
-            AddEditItemScreen()
+        composable(
+            route = ExpiryGuardDestination.ADD_EDIT,
+            arguments = listOf(
+                navArgument("itemId") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) { backStackEntry ->
+            val itemId = backStackEntry.arguments?.getString("itemId")
+            val viewModel: AddEditItemViewModel = viewModel(
+                factory = AddEditItemViewModel.Factory(repository, itemId)
+            )
+            AddEditItemScreen(
+                viewModel = viewModel,
+                isEditing = !itemId.isNullOrBlank(),
+                onNavigateBack = { navController.popBackStack() }
+            )
         }
 
         composable(ExpiryGuardDestination.DETAIL_ROUTE) {
