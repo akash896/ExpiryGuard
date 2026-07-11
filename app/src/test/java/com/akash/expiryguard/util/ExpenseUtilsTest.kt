@@ -10,6 +10,18 @@ class ExpenseUtilsTest {
     private val referenceDate: LocalDate = LocalDate.of(2026, 7, 5)
 
     @Test
+    fun calculateTotalSpent_sumsOnlyNonNegativeFinitePrices() {
+        val items = listOf(
+            item(price = 100.0),
+            item(price = 25.5),
+            item(price = -10.0),
+            item(price = Double.NaN)
+        )
+
+        assertEquals(125.5, calculateTotalSpent(items), 0.0)
+    }
+
+    @Test
     fun filterItemsByExpensePeriod_filtersDailyUsingPurchaseDate() {
         val items = listOf(
             item(id = "today", purchaseDate = "2026-07-05"),
@@ -118,6 +130,18 @@ class ExpenseUtilsTest {
         )
 
         assertEquals(100.0, calculateTotalConsumedValue(items), 0.0)
+    }
+
+    @Test
+    fun calculateTotalActiveValue_includesOnlyUnconsumedNonExpiredItems() {
+        val items = listOf(
+            item(price = 100.0, expiryDate = "2026-07-10"),
+            item(price = 50.0, expiryDate = "2026-07-04"),
+            item(price = 25.0, expiryDate = "2026-07-10", consumed = true),
+            item(price = -5.0, expiryDate = "2026-07-10")
+        )
+
+        assertEquals(100.0, calculateTotalActiveValue(items, referenceDate), 0.0)
     }
 
     @Test

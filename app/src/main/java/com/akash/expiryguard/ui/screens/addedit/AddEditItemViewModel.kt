@@ -55,7 +55,9 @@ class AddEditItemViewModel(
                     expiryDate = validatedState.expiryDate,
                     purchaseDate = validatedState.purchaseDate.ifBlank { formatIsoDate(LocalDate.now()) },
                     quantity = validatedState.quantity.trim(),
-                    price = validatedState.price.toDoubleOrNull()?.takeIf { it >= 0.0 } ?: 0.0,
+                    price = validatedState.price.toDoubleOrNull()
+                        ?.takeIf { it.isFinite() && it >= 0.0 }
+                        ?: 0.0,
                     currency = validatedState.currency.ifBlank { "INR" },
                     notes = validatedState.notes.trim(),
                     reminderDaysBefore = validatedState.reminderDaysBefore,
@@ -162,7 +164,7 @@ data class AddEditItemUiState(
             expiryDateError = if (expiryDate.isBlank()) "Expiry date is required." else null,
             priceError = when {
                 price.isBlank() -> null
-                parsedPrice == null -> "Enter a valid price."
+                parsedPrice == null || !parsedPrice.isFinite() -> "Enter a valid price."
                 parsedPrice < 0.0 -> "Price cannot be negative."
                 else -> null
             },
