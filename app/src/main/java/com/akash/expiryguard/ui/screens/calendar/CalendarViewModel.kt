@@ -25,9 +25,7 @@ class CalendarViewModel(
         displayedMonth,
         selectedDate
     ) { items, month, date ->
-        val itemsByDate = items.mapNotNull { item ->
-            parseIsoDate(item.expiryDate)?.let { expiryDate -> expiryDate to item }
-        }.groupBy({ it.first }, { it.second })
+        val itemsByDate = groupItemsByExpiryDate(items)
         val itemsThisMonth = itemsByDate.filterKeys { it.year == month.year && it.month == month.month }
 
         CalendarUiState(
@@ -91,4 +89,10 @@ internal fun datesForCalendarMonth(month: YearMonth): List<LocalDate?> {
     val leadingEmptyCells = month.atDay(1).dayOfWeek.value - 1
     return List(leadingEmptyCells) { null } +
         (1..month.lengthOfMonth()).map(month::atDay)
+}
+
+internal fun groupItemsByExpiryDate(items: List<ExpiryItem>): Map<LocalDate, List<ExpiryItem>> {
+    return items.mapNotNull { item ->
+        parseIsoDate(item.expiryDate)?.let { expiryDate -> expiryDate to item }
+    }.groupBy({ it.first }, { it.second })
 }

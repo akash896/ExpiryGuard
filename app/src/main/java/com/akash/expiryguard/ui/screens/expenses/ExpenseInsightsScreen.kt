@@ -1,6 +1,8 @@
 package com.akash.expiryguard.ui.screens.expenses
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -25,6 +27,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -42,6 +45,9 @@ fun ExpenseInsightsScreen(
     ExpenseInsightsContent(
         uiState = uiState,
         onPeriodSelected = viewModel::onPeriodSelected,
+        onPreviousPeriod = viewModel::showPreviousPeriod,
+        onNextPeriod = viewModel::showNextPeriod,
+        onCategorySortSelected = viewModel::onCategorySortSelected,
         onNavigateBack = onNavigateBack
     )
 }
@@ -51,6 +57,9 @@ fun ExpenseInsightsScreen(
 private fun ExpenseInsightsContent(
     uiState: ExpenseInsightsUiState,
     onPeriodSelected: (ExpensePeriod) -> Unit,
+    onPreviousPeriod: () -> Unit,
+    onNextPeriod: () -> Unit,
+    onCategorySortSelected: (ExpenseCategorySort) -> Unit,
     onNavigateBack: () -> Unit
 ) {
     Scaffold(
@@ -58,9 +67,7 @@ private fun ExpenseInsightsContent(
             TopAppBar(
                 title = { Text(text = "Expense Insights") },
                 navigationIcon = {
-                    TextButton(onClick = onNavigateBack) {
-                        Text(text = "Back")
-                    }
+                    TextButton(onClick = onNavigateBack) { Text(text = "Back") }
                 }
             )
         }
@@ -78,6 +85,13 @@ private fun ExpenseInsightsContent(
                     onPeriodSelected = onPeriodSelected
                 )
             }
+            item {
+                PeriodNavigation(
+                    periodLabel = uiState.periodLabel,
+                    onPreviousPeriod = onPreviousPeriod,
+                    onNextPeriod = onNextPeriod
+                )
+            }
 
             when {
                 uiState.isLoading -> {
@@ -93,10 +107,19 @@ private fun ExpenseInsightsContent(
                 }
 
                 else -> {
+                    val summary = requireNotNull(uiState.summary)
                     item {
-                        SummaryCards(summary = uiState.summary)
+                        SummaryCards(
+                            summary = summary,
+                            wastePercentage = uiState.wastePercentage
+                        )
                     }
-
+                    item {
+                        CategoryRanking(
+                            highestSpendingCategory = uiState.highestSpendingCategory,
+                            highestExpiredValueCategory = uiState.highestExpiredValueCategory
+                        )
+                    }
                     item {
                         Text(
                             text = "Category breakdown",
@@ -104,13 +127,19 @@ private fun ExpenseInsightsContent(
                             fontWeight = FontWeight.SemiBold
                         )
                     }
+                    item {
+                        CategorySortSelector(
+                            selectedSort = uiState.selectedCategorySort,
+                            onSortSelected = onCategorySortSelected
+                        )
+                    }
 
-                    items(
-                        items = uiState.summary.categoryBreakdown.values
-                            .sortedByDescending { it.totalSpent },
-                        key = { it.category }
-                    ) { categorySummary ->
-                        CategoryExpenseBreakdown(summary = categorySummary)
+                    val highestSpent = uiState.sortedCategories.maxOfOrNull { it.totalSpent } ?: 0.0
+                    items(uiState.sortedCategories, key = { it.category }) { categorySummary ->
+                        CategoryExpenseBreakdown(
+                            summary = categorySummary,
+                            highestSpent = highestSpent
+                        )
                     }
                 }
             }
@@ -135,13 +164,29 @@ fun ExpensePeriodSelector(
 }
 
 @Composable
-private fun SummaryCards(summary: ExpenseSummary) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+private fun PeriodNavigation(
+    periodLabel: String,
+    onPreviousPeriod: () -> Unit,
+    onNextPeriod: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        TextButton(onClick = onPreviousPeriod) { Text(text = "Previous") }
         Text(
-            text = summary.periodLabel,
-            style = MaterialTheme.typography.titleMedium,
+            text = periodLabel,
+            style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.SemiBold
         )
+        TextButton(onClick = onNextPeriod) { Text(text = "Next") }
+    }
+}
+
+@Composable
+private fun SummaryCards(summary: ExpenseSummary, wastePercentage: Double) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         SummaryRow(
             leftLabel = "Total spent",
             leftValue = formatMoney(summary.totalSpent),
@@ -155,10 +200,10 @@ private fun SummaryCards(summary: ExpenseSummary) {
             rightValue = formatMoney(summary.totalActiveValue)
         )
         SummaryRow(
-            leftLabel = "Items",
-            leftValue = summary.itemCount.toString(),
-            rightLabel = "Expired items",
-            rightValue = summary.expiredItemCount.toString()
+            leftLabel = "Waste percentage",
+            leftValue = formatPercentage(wastePercentage),
+            rightLabel = "Items",
+            rightValue = summary.itemCount.toString()
         )
     }
 }
@@ -174,25 +219,13 @@ private fun SummaryRow(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        SummaryCard(
-            label = leftLabel,
-            value = leftValue,
-            modifier = Modifier.weight(1f)
-        )
-        SummaryCard(
-            label = rightLabel,
-            value = rightValue,
-            modifier = Modifier.weight(1f)
-        )
+        SummaryCard(leftLabel, leftValue, Modifier.weight(1f))
+        SummaryCard(rightLabel, rightValue, Modifier.weight(1f))
     }
 }
 
 @Composable
-private fun SummaryCard(
-    label: String,
-    value: String,
-    modifier: Modifier = Modifier
-) {
+private fun SummaryCard(label: String, value: String, modifier: Modifier = Modifier) {
     Card(modifier = modifier) {
         Column(
             modifier = Modifier
@@ -215,7 +248,70 @@ private fun SummaryCard(
 }
 
 @Composable
-fun CategoryExpenseBreakdown(summary: CategoryExpenseSummary) {
+private fun CategoryRanking(
+    highestSpendingCategory: CategoryExpenseSummary?,
+    highestExpiredValueCategory: CategoryExpenseSummary?
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = "Category leaders",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold
+        )
+        RankingRow(
+            label = "Highest spending",
+            value = highestSpendingCategory?.let { "${it.category} · ${formatMoney(it.totalSpent)}" }
+                ?: "No category data"
+        )
+        RankingRow(
+            label = "Highest expired value",
+            value = highestExpiredValueCategory?.let { "${it.category} · ${formatMoney(it.totalExpiredValue)}" }
+                ?: "No category data"
+        )
+    }
+}
+
+@Composable
+private fun RankingRow(label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(text = label, style = MaterialTheme.typography.bodyMedium)
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun CategorySortSelector(
+    selectedSort: ExpenseCategorySort,
+    onSortSelected: (ExpenseCategorySort) -> Unit
+) {
+    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        items(ExpenseCategorySort.entries.toList()) { sort ->
+            FilterChip(
+                selected = selectedSort == sort,
+                onClick = { onSortSelected(sort) },
+                label = { Text(text = sort.label) }
+            )
+        }
+    }
+}
+
+@Composable
+fun CategoryExpenseBreakdown(summary: CategoryExpenseSummary, highestSpent: Double) {
+    val spendingFraction = if (highestSpent.isFinite() && highestSpent > 0.0) {
+        (summary.totalSpent / highestSpent).toFloat().coerceIn(0f, 1f)
+    } else {
+        0f
+    }
+
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier
@@ -239,6 +335,7 @@ fun CategoryExpenseBreakdown(summary: CategoryExpenseSummary) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+            SpendingBar(spendingFraction)
             BreakdownRow(
                 leftLabel = "Spent",
                 leftValue = formatMoney(summary.totalSpent),
@@ -252,6 +349,24 @@ fun CategoryExpenseBreakdown(summary: CategoryExpenseSummary) {
                 rightValue = formatMoney(summary.totalActiveValue)
             )
         }
+    }
+}
+
+@Composable
+private fun SpendingBar(fraction: Float) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(8.dp)
+            .clip(MaterialTheme.shapes.small)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(fraction)
+                .height(8.dp)
+                .background(MaterialTheme.colorScheme.primary)
+        )
     }
 }
 
@@ -272,11 +387,7 @@ private fun BreakdownRow(
 }
 
 @Composable
-private fun BreakdownMetric(
-    label: String,
-    value: String,
-    modifier: Modifier = Modifier
-) {
+private fun BreakdownMetric(label: String, value: String, modifier: Modifier = Modifier) {
     Column(modifier = modifier) {
         Text(
             text = label,
@@ -351,4 +462,9 @@ private fun ExpensePeriod.label(): String {
 private fun formatMoney(value: Double): String {
     val safeValue = if (value.isFinite() && value > 0.0) value else 0.0
     return "₹%.2f".format(safeValue)
+}
+
+private fun formatPercentage(value: Double): String {
+    val safeValue = if (value.isFinite() && value >= 0.0) value else 0.0
+    return "%.1f%%".format(safeValue)
 }

@@ -11,7 +11,7 @@ ExpiryGuard is an Android app for tracking the expiry dates, value, and lifecycl
 - Home includes Quick Add templates for common food, medicine, document, warranty, and subscription items.
 - Calendar View shows upcoming expiries by month, highlights dates with expiring items, and opens item details from a selected date.
 - Add/Edit supports name, category, expiry date, optional purchase date, quantity, price, currency, reminder period, and notes.
-- Expense Insights groups spending and value by daily, monthly, quarterly, or annual purchase periods.
+- Expense Insights supports daily, monthly, quarterly, and annual navigation with waste percentage, category leaders, sortable breakdowns, and spending bars.
 - Item Detail shows all saved fields, expiry timing, created/updated timestamps, value state, and lifecycle actions.
 - An item can be marked consumed, restored to not consumed, archived, or deleted. Archiving and deleting require confirmation.
 - Navigation uses explicit routes for Home, Add Item, Edit Item, Item Detail, Settings, and Expense Insights. Screens other than Home provide a back action in the top app bar.
@@ -117,7 +117,7 @@ Quick Add templates on Home open the regular Add Item form with a name, category
 
 ## Calendar View
 
-Open Calendar from Home to browse a month of expiry dates. Dates with items have an indicator; expired dates use a danger indicator and today is highlighted. Select a date to view its expiring items, then tap an item to open its detail screen.
+Open Calendar from Home to browse a month of expiry dates. Every date with one or more expiring items has an indicator; expired dates use a danger indicator and today is highlighted. Select a date to view its expiring items, then tap an item to open its detail screen.
 
 ## Notifications
 

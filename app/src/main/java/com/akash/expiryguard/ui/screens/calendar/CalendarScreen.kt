@@ -31,9 +31,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.shape.CircleShape
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.akash.expiryguard.data.model.ExpiryItem
 import com.akash.expiryguard.util.parseIsoDate
@@ -256,6 +259,13 @@ private fun CalendarDay(
         modifier = Modifier
             .aspectRatio(1f)
             .clip(MaterialTheme.shapes.small)
+            .semantics {
+                contentDescription = if (items.isEmpty()) {
+                    date.toString()
+                } else {
+                    "${date.dayOfMonth}, ${items.size} item(s) expiring"
+                }
+            }
             .clickable { onClick(date) },
         contentAlignment = Alignment.Center
     ) {
@@ -279,8 +289,8 @@ private fun CalendarDay(
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
                             .padding(bottom = 4.dp)
-                            .size(6.dp),
-                        shape = MaterialTheme.shapes.extraSmall,
+                            .size(8.dp),
+                        shape = CircleShape,
                         color = indicatorColor,
                         content = {}
                     )
