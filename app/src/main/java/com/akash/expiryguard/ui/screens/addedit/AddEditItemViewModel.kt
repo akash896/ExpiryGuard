@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.akash.expiryguard.data.model.ExpiryCategory
 import com.akash.expiryguard.data.model.ExpiryItem
+import com.akash.expiryguard.data.model.QuickAddTemplate
 import com.akash.expiryguard.data.repository.ExpiryItemRepository
 import com.akash.expiryguard.util.formatIsoDate
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,9 +17,16 @@ import java.time.LocalDate
 
 class AddEditItemViewModel(
     private val repository: ExpiryItemRepository,
-    private val itemId: String?
+    private val itemId: String?,
+    template: QuickAddTemplate? = null
 ) : ViewModel() {
-    private val _uiState = MutableStateFlow(AddEditItemUiState(isLoading = !itemId.isNullOrBlank()))
+    private val _uiState = MutableStateFlow(
+        if (itemId.isNullOrBlank() && template != null) {
+            AddEditItemUiState.fromTemplate(template)
+        } else {
+            AddEditItemUiState(isLoading = !itemId.isNullOrBlank())
+        }
+    )
     val uiState: StateFlow<AddEditItemUiState> = _uiState.asStateFlow()
 
     init {
@@ -118,11 +126,12 @@ class AddEditItemViewModel(
 
     class Factory(
         private val repository: ExpiryItemRepository,
-        private val itemId: String?
+        private val itemId: String?,
+        private val template: QuickAddTemplate? = null
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return AddEditItemViewModel(repository, itemId) as T
+            return AddEditItemViewModel(repository, itemId, template) as T
         }
     }
 }
@@ -174,6 +183,17 @@ data class AddEditItemUiState(
     }
 
     companion object {
+        fun fromTemplate(template: QuickAddTemplate): AddEditItemUiState {
+            return AddEditItemUiState(
+                name = template.displayName,
+                category = template.defaultCategory,
+                purchaseDate = formatIsoDate(LocalDate.now()),
+                quantity = template.defaultQuantity,
+                reminderDaysBefore = template.defaultReminderDaysBefore,
+                notes = template.defaultNotes
+            )
+        }
+
         fun fromItem(item: ExpiryItem): AddEditItemUiState {
             return AddEditItemUiState(
                 name = item.name,

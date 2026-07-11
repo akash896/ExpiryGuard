@@ -8,6 +8,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.akash.expiryguard.data.local.AppPreferences
+import com.akash.expiryguard.data.model.QuickAddTemplates
 import com.akash.expiryguard.data.repository.ExpiryItemRepository
 import com.akash.expiryguard.ui.screens.addedit.AddEditItemScreen
 import com.akash.expiryguard.ui.screens.addedit.AddEditItemViewModel
@@ -55,16 +56,29 @@ fun AppNavGraph(
             HomeScreen(
                 viewModel = viewModel,
                 onAddItemClick = { navController.navigate(AppRoutes.ADD_ITEM) },
+                onQuickAddClick = { template ->
+                    navController.navigate(AppRoutes.addItem(template.templateId))
+                },
                 onItemClick = { itemId -> navController.navigate(AppRoutes.detail(itemId)) },
                 onSettingsClick = { navController.navigate(AppRoutes.SETTINGS) },
                 onExpenseInsightsClick = { navController.navigate(AppRoutes.EXPENSE_INSIGHTS) }
             )
         }
 
-        composable(AppRoutes.ADD_ITEM) {
+        composable(
+            route = AppRoutes.ADD_ITEM_WITH_TEMPLATE,
+            arguments = listOf(
+                navArgument(AppRoutes.TEMPLATE_ID) {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) { backStackEntry ->
             AddEditDestination(
                 repository = repository,
                 itemId = null,
+                templateId = backStackEntry.arguments?.getString(AppRoutes.TEMPLATE_ID),
                 onNavigateBack = navController::popBackStack
             )
         }
@@ -77,6 +91,7 @@ fun AppNavGraph(
             AddEditDestination(
                 repository = repository,
                 itemId = itemId,
+                templateId = null,
                 onNavigateBack = navController::popBackStack
             )
         }
@@ -124,10 +139,15 @@ fun AppNavGraph(
 private fun AddEditDestination(
     repository: ExpiryItemRepository,
     itemId: String?,
+    templateId: String?,
     onNavigateBack: () -> Unit
 ) {
     val viewModel: AddEditItemViewModel = viewModel(
-        factory = AddEditItemViewModel.Factory(repository, itemId)
+        factory = AddEditItemViewModel.Factory(
+            repository = repository,
+            itemId = itemId,
+            template = QuickAddTemplates.find(templateId)
+        )
     )
     AddEditItemScreen(
         viewModel = viewModel,

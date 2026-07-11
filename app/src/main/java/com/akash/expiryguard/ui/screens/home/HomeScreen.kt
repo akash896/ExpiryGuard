@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
@@ -38,6 +39,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.akash.expiryguard.data.model.ExpiryCategory
 import com.akash.expiryguard.data.model.ExpiryItem
 import com.akash.expiryguard.data.model.ExpiryStatus
+import com.akash.expiryguard.data.model.QuickAddTemplate
+import com.akash.expiryguard.data.model.QuickAddTemplates
 import com.akash.expiryguard.notifications.NotificationHelper
 import com.akash.expiryguard.util.daysUntilExpiry
 import com.akash.expiryguard.util.getExpiryStatus
@@ -46,6 +49,7 @@ import com.akash.expiryguard.util.getExpiryStatus
 fun HomeScreen(
     viewModel: HomeViewModel,
     onAddItemClick: () -> Unit,
+    onQuickAddClick: (QuickAddTemplate) -> Unit,
     onItemClick: (String) -> Unit,
     onSettingsClick: () -> Unit,
     onExpenseInsightsClick: () -> Unit
@@ -62,6 +66,7 @@ fun HomeScreen(
             viewModel.setNotificationsEnabled(item, enabled)
         },
         onAddItemClick = onAddItemClick,
+        onQuickAddClick = onQuickAddClick,
         onItemClick = onItemClick,
         onSettingsClick = onSettingsClick,
         onExpenseInsightsClick = onExpenseInsightsClick
@@ -76,6 +81,7 @@ private fun HomeScreenContent(
     onCategorySelected: (String?) -> Unit,
     onNotificationEnabledChange: (ExpiryItem, Boolean) -> Unit,
     onAddItemClick: () -> Unit,
+    onQuickAddClick: (QuickAddTemplate) -> Unit,
     onItemClick: (String) -> Unit,
     onSettingsClick: () -> Unit,
     onExpenseInsightsClick: () -> Unit
@@ -113,6 +119,10 @@ private fun HomeScreenContent(
         ) {
             item {
                 MoneySummarySection(uiState = uiState)
+            }
+
+            item {
+                QuickAddSection(onTemplateClick = onQuickAddClick)
             }
 
             item {
@@ -170,6 +180,25 @@ private fun HomeScreenContent(
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun QuickAddSection(onTemplateClick: (QuickAddTemplate) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = "Quick add",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold
+        )
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            items(QuickAddTemplates.all, key = { it.templateId }) { template ->
+                AssistChip(
+                    onClick = { onTemplateClick(template) },
+                    label = { Text(text = template.displayName) }
+                )
             }
         }
     }
