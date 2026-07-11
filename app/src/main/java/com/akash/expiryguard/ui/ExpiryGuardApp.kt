@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.rememberNavController
 import com.akash.expiryguard.data.local.AppPreferences
 import com.akash.expiryguard.data.repository.ExpiryItemRepository
+import com.akash.expiryguard.data.repository.ShoppingListRepository
 import com.akash.expiryguard.ui.navigation.AppNavGraph
 import com.akash.expiryguard.ui.navigation.AppRoutes
 import androidx.compose.foundation.layout.Box
@@ -17,6 +18,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 @Composable
 fun ExpiryGuardApp(
     repository: ExpiryItemRepository,
+    shoppingListRepository: ShoppingListRepository,
     appPreferences: AppPreferences,
     useDarkTheme: Boolean,
     onThemeChange: (Boolean) -> Unit
@@ -36,6 +38,7 @@ fun ExpiryGuardApp(
     AppNavGraph(
         navController = navController,
         repository = repository,
+        shoppingListRepository = shoppingListRepository,
         appPreferences = appPreferences,
         startDestination = if (onboardingCompleted == true) AppRoutes.HOME else AppRoutes.ONBOARDING,
         useDarkTheme = useDarkTheme,

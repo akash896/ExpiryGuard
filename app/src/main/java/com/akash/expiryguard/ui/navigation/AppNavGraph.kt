@@ -10,6 +10,7 @@ import androidx.navigation.navArgument
 import com.akash.expiryguard.data.local.AppPreferences
 import com.akash.expiryguard.data.model.QuickAddTemplates
 import com.akash.expiryguard.data.repository.ExpiryItemRepository
+import com.akash.expiryguard.data.repository.ShoppingListRepository
 import com.akash.expiryguard.ui.screens.addedit.AddEditItemScreen
 import com.akash.expiryguard.ui.screens.addedit.AddEditItemViewModel
 import com.akash.expiryguard.ui.screens.calendar.CalendarScreen
@@ -24,11 +25,14 @@ import com.akash.expiryguard.ui.screens.onboarding.OnboardingScreen
 import com.akash.expiryguard.ui.screens.onboarding.OnboardingViewModel
 import com.akash.expiryguard.ui.screens.settings.SettingsScreen
 import com.akash.expiryguard.ui.screens.settings.SettingsViewModel
+import com.akash.expiryguard.ui.screens.shopping.ShoppingListScreen
+import com.akash.expiryguard.ui.screens.shopping.ShoppingListViewModel
 
 @Composable
 fun AppNavGraph(
     navController: NavHostController,
     repository: ExpiryItemRepository,
+    shoppingListRepository: ShoppingListRepository,
     appPreferences: AppPreferences,
     startDestination: String,
     useDarkTheme: Boolean,
@@ -62,6 +66,7 @@ fun AppNavGraph(
                     navController.navigate(AppRoutes.addItem(template.templateId))
                 },
                 onItemClick = { itemId -> navController.navigate(AppRoutes.detail(itemId)) },
+                onShoppingListClick = { navController.navigate(AppRoutes.SHOPPING_LIST) },
                 onCalendarClick = { navController.navigate(AppRoutes.CALENDAR) },
                 onSettingsClick = { navController.navigate(AppRoutes.SETTINGS) },
                 onExpenseInsightsClick = { navController.navigate(AppRoutes.EXPENSE_INSIGHTS) }
@@ -107,12 +112,23 @@ fun AppNavGraph(
         ) { backStackEntry ->
             val itemId = requireNotNull(backStackEntry.arguments?.getString(AppRoutes.ITEM_ID))
             val viewModel: ItemDetailViewModel = viewModel(
-                factory = ItemDetailViewModel.Factory(repository, itemId)
+                factory = ItemDetailViewModel.Factory(repository, shoppingListRepository, itemId)
             )
             ItemDetailScreen(
                 viewModel = viewModel,
                 onNavigateBack = navController::popBackStack,
-                onEditItem = { id -> navController.navigate(AppRoutes.editItem(id)) }
+                onEditItem = { id -> navController.navigate(AppRoutes.editItem(id)) },
+                onAddToShoppingList = viewModel::addToShoppingList
+            )
+        }
+
+        composable(AppRoutes.SHOPPING_LIST) {
+            val viewModel: ShoppingListViewModel = viewModel(
+                factory = ShoppingListViewModel.Factory(shoppingListRepository)
+            )
+            ShoppingListScreen(
+                viewModel = viewModel,
+                onNavigateBack = navController::popBackStack
             )
         }
 

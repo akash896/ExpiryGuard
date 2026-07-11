@@ -40,6 +40,9 @@ class MainActivity : ComponentActivity() {
                     AuthBootstrapState.Loading -> BootstrapStatusScreen("Signing you in...")
                     AuthBootstrapState.Ready -> ExpiryGuardApp(
                         repository = repository,
+                        shoppingListRepository = (application as ExpiryGuardApplication)
+                            .container
+                            .shoppingListRepository,
                         appPreferences = (application as ExpiryGuardApplication).container.appPreferences,
                         useDarkTheme = useDarkTheme.value,
                         onThemeChange = ::setDarkTheme

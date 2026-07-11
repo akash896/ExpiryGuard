@@ -14,6 +14,7 @@ object AppRoutes {
     const val SETTINGS = "settings"
     const val EXPENSE_INSIGHTS = "expense_insights"
     const val CALENDAR = "calendar"
+    const val SHOPPING_LIST = "shopping_list"
 
     fun editItem(itemId: String): String = "edit_item/${Uri.encode(itemId)}"
 

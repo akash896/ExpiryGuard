@@ -21,6 +21,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
@@ -51,6 +52,7 @@ fun HomeScreen(
     onAddItemClick: () -> Unit,
     onQuickAddClick: (QuickAddTemplate) -> Unit,
     onItemClick: (String) -> Unit,
+    onShoppingListClick: () -> Unit,
     onCalendarClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onExpenseInsightsClick: () -> Unit
@@ -69,6 +71,7 @@ fun HomeScreen(
         onAddItemClick = onAddItemClick,
         onQuickAddClick = onQuickAddClick,
         onItemClick = onItemClick,
+        onShoppingListClick = onShoppingListClick,
         onCalendarClick = onCalendarClick,
         onSettingsClick = onSettingsClick,
         onExpenseInsightsClick = onExpenseInsightsClick
@@ -85,6 +88,7 @@ private fun HomeScreenContent(
     onAddItemClick: () -> Unit,
     onQuickAddClick: (QuickAddTemplate) -> Unit,
     onItemClick: (String) -> Unit,
+    onShoppingListClick: () -> Unit,
     onCalendarClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onExpenseInsightsClick: () -> Unit
@@ -129,6 +133,15 @@ private fun HomeScreenContent(
 
             item {
                 QuickAddSection(onTemplateClick = onQuickAddClick)
+            }
+
+            item {
+                OutlinedButton(
+                    onClick = onShoppingListClick,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(text = "Shopping list")
+                }
             }
 
             item {

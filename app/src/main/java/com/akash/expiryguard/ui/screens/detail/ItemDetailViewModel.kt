@@ -4,7 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.akash.expiryguard.data.model.ExpiryItem
+import com.akash.expiryguard.data.model.ShoppingItem
 import com.akash.expiryguard.data.repository.ExpiryItemRepository
+import com.akash.expiryguard.data.repository.ShoppingListRepository
 import com.akash.expiryguard.util.formatIsoDate
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,6 +17,7 @@ import java.time.LocalDate
 
 class ItemDetailViewModel(
     private val repository: ExpiryItemRepository,
+    private val shoppingListRepository: ShoppingListRepository,
     private val itemId: String
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(ItemDetailUiState(isLoading = true))
@@ -59,9 +62,26 @@ class ItemDetailViewModel(
         repository.markItemNotConsumed(itemId)
     }
 
+    fun addToShoppingList() {
+        val sourceItem = _uiState.value.item ?: return
+        runAction(
+            onSuccess = {
+                _uiState.update { it.copy(actionSuccessMessage = "Added to shopping list.") }
+            }
+        ) {
+            shoppingListRepository.addShoppingItem(ShoppingItem.fromExpiryItem(sourceItem))
+        }
+    }
+
     private fun runAction(onSuccess: () -> Unit, action: suspend () -> Unit) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isActionInProgress = true, actionErrorMessage = null) }
+            _uiState.update {
+                it.copy(
+                    isActionInProgress = true,
+                    actionErrorMessage = null,
+                    actionSuccessMessage = null
+                )
+            }
             try {
                 action()
                 _uiState.update { it.copy(isActionInProgress = false) }
@@ -79,11 +99,12 @@ class ItemDetailViewModel(
 
     class Factory(
         private val repository: ExpiryItemRepository,
+        private val shoppingListRepository: ShoppingListRepository,
         private val itemId: String
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return ItemDetailViewModel(repository, itemId) as T
+            return ItemDetailViewModel(repository, shoppingListRepository, itemId) as T
         }
     }
 }
@@ -93,5 +114,6 @@ data class ItemDetailUiState(
     val isLoading: Boolean = false,
     val isActionInProgress: Boolean = false,
     val errorMessage: String? = null,
-    val actionErrorMessage: String? = null
+    val actionErrorMessage: String? = null,
+    val actionSuccessMessage: String? = null
 )

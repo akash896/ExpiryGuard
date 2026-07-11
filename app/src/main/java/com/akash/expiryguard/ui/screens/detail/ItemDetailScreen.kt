@@ -44,7 +44,8 @@ import java.util.Locale
 fun ItemDetailScreen(
     viewModel: ItemDetailViewModel,
     onNavigateBack: () -> Unit,
-    onEditItem: (String) -> Unit
+    onEditItem: (String) -> Unit,
+    onAddToShoppingList: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showDeleteConfirmation by mutableStateOf(false)
@@ -58,6 +59,7 @@ fun ItemDetailScreen(
         onArchiveItem = { showArchiveConfirmation = true },
         onMarkConsumed = viewModel::markItemConsumed,
         onMarkNotConsumed = viewModel::markItemNotConsumed,
+        onAddToShoppingList = onAddToShoppingList,
         onRetry = viewModel::refreshItem
     )
 
@@ -98,6 +100,7 @@ private fun ItemDetailContent(
     onArchiveItem: () -> Unit,
     onMarkConsumed: () -> Unit,
     onMarkNotConsumed: () -> Unit,
+    onAddToShoppingList: () -> Unit,
     onRetry: () -> Unit
 ) {
     Scaffold(
@@ -126,11 +129,13 @@ private fun ItemDetailContent(
                 item = uiState.item,
                 isActionInProgress = uiState.isActionInProgress,
                 actionErrorMessage = uiState.actionErrorMessage,
+                actionSuccessMessage = uiState.actionSuccessMessage,
                 modifier = Modifier.padding(innerPadding),
                 onDeleteItem = onDeleteItem,
                 onArchiveItem = onArchiveItem,
                 onMarkConsumed = onMarkConsumed,
-                onMarkNotConsumed = onMarkNotConsumed
+                onMarkNotConsumed = onMarkNotConsumed,
+                onAddToShoppingList = onAddToShoppingList
             )
         }
     }
@@ -141,11 +146,13 @@ private fun ItemDetailBody(
     item: ExpiryItem,
     isActionInProgress: Boolean,
     actionErrorMessage: String?,
+    actionSuccessMessage: String?,
     modifier: Modifier = Modifier,
     onDeleteItem: () -> Unit,
     onArchiveItem: () -> Unit,
     onMarkConsumed: () -> Unit,
-    onMarkNotConsumed: () -> Unit
+    onMarkNotConsumed: () -> Unit,
+    onAddToShoppingList: () -> Unit
 ) {
     LazyColumn(
         modifier = modifier.fillMaxSize(),
@@ -193,6 +200,12 @@ private fun ItemDetailBody(
             }
         }
 
+        actionSuccessMessage?.let { message ->
+            item {
+                Text(text = message, color = MaterialTheme.colorScheme.primary)
+            }
+        }
+
         item {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (item.consumed) {
@@ -211,6 +224,14 @@ private fun ItemDetailBody(
                     ) {
                         Text(text = "Mark as consumed")
                     }
+                }
+
+                OutlinedButton(
+                    onClick = onAddToShoppingList,
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !isActionInProgress
+                ) {
+                    Text(text = "Add to shopping list")
                 }
 
                 if (!item.archived) {

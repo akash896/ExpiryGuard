@@ -10,6 +10,7 @@ ExpiryGuard is an Android app for tracking the expiry dates, value, and lifecycl
 - Home groups active items by expiry urgency and provides search, category filters, and value summaries.
 - Home includes Quick Add templates for common food, medicine, document, warranty, and subscription items.
 - Calendar View shows upcoming expiries by month, highlights dates with expiring items, and opens item details from a selected date.
+- Shopping List keeps manual and rebuy items, with checked items separated from items still to buy.
 - Add/Edit supports name, category, expiry date, optional purchase date, quantity, price, currency, reminder period, and notes.
 - Expense Insights supports daily, monthly, quarterly, and annual navigation with waste percentage, category leaders, sortable breakdowns, and spending bars.
 - Item Detail shows all saved fields, expiry timing, created/updated timestamps, value state, and lifecycle actions.
@@ -55,6 +56,16 @@ The project expects Firebase to be configured for the application ID above.
 3. Create a Cloud Firestore database.
 4. Apply rules that allow an authenticated user to access only documents inside their own `users/{userId}` document.
 
+Shopping List entries are stored separately at `users/{userId}/shoppingList/{shoppingItemId}`.
+
+If the Firestore rules enumerate subcollections, add the Shopping List rule alongside the existing items rule:
+
+```text
+match /users/{userId}/shoppingList/{shoppingItemId} {
+  allow read, write: if request.auth != null && request.auth.uid == userId;
+}
+```
+
 No Firebase API keys are written in source code. The Google Services Gradle plugin reads them from `google-services.json` during the build.
 
 ## Build and run
@@ -89,7 +100,7 @@ On first launch, ExpiryGuard shows three onboarding pages before Home. Use Next 
 app/src/main/java/com/akash/expiryguard/
   data/model/          Item, category, status, and expense models
   data/repository/     Repository contract
-  data/firebase/       Firebase Auth and Firestore implementation
+  data/firebase/       Firebase Auth and Firestore implementations
   ui/screens/          Home, Add/Edit, Detail, Insights, and Settings screens
   ui/navigation/       Compose routes and navigation host
   util/                Date, expense, and Firebase task helpers
@@ -107,6 +118,7 @@ Route constants live in `ui/navigation/AppRoutes.kt`. The navigation graph in `u
 - `settings`
 - `expense_insights`
 - `calendar`
+- `shopping_list`
 - `onboarding`
 
 The Home add button opens `add_item`. Tapping an item opens its detail page, where Edit opens `edit_item/{itemId}`. Saving an item, deleting an item, or archiving an item returns to the previous screen.
@@ -114,6 +126,10 @@ The Home add button opens `add_item`. Tapping an item opens its detail page, whe
 ## Quick Add
 
 Quick Add templates on Home open the regular Add Item form with a name, category, reminder period, and today's purchase date prefilled. Expiry date remains empty and must be reviewed before saving. Templates do not save an item automatically.
+
+## Shopping List
+
+Open Shopping List from Home to add a manual item, edit its name/category/quantity/estimated price, mark it checked, or delete it. Item Detail also offers Add to shopping list, which copies the item’s rebuy details without changing the original expiry item.
 
 ## Calendar View
 
