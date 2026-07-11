@@ -1,7 +1,5 @@
 package com.akash.expiryguard
 
-import android.Manifest
-import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -16,10 +14,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.core.app.ActivityCompat
 import androidx.lifecycle.lifecycleScope
 import com.akash.expiryguard.data.repository.ExpiryItemRepository
-import com.akash.expiryguard.notifications.NotificationHelper
 import com.akash.expiryguard.ui.ExpiryGuardApp
 import com.akash.expiryguard.ui.theme.ExpiryGuardTheme
 import kotlinx.coroutines.launch
@@ -36,7 +32,6 @@ class MainActivity : ComponentActivity() {
         repository = (application as ExpiryGuardApplication).container.itemRepository
         useDarkTheme.value = getSharedPreferences(THEME_PREFERENCES, MODE_PRIVATE)
             .getBoolean(DARK_THEME_KEY, false)
-        requestNotificationPermissionIfNeeded()
         signInAnonymously()
 
         setContent {
@@ -45,6 +40,7 @@ class MainActivity : ComponentActivity() {
                     AuthBootstrapState.Loading -> BootstrapStatusScreen("Signing you in...")
                     AuthBootstrapState.Ready -> ExpiryGuardApp(
                         repository = repository,
+                        appPreferences = (application as ExpiryGuardApplication).container.appPreferences,
                         useDarkTheme = useDarkTheme.value,
                         onThemeChange = ::setDarkTheme
                     )
@@ -68,18 +64,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun requestNotificationPermissionIfNeeded() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
-
-        if (!NotificationHelper.canPostNotifications(this)) {
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(Manifest.permission.POST_NOTIFICATIONS),
-                NOTIFICATION_PERMISSION_REQUEST_CODE
-            )
-        }
-    }
-
     private fun setDarkTheme(enabled: Boolean) {
         useDarkTheme.value = enabled
         getSharedPreferences(THEME_PREFERENCES, MODE_PRIVATE)
@@ -89,7 +73,6 @@ class MainActivity : ComponentActivity() {
     }
 
     private companion object {
-        const val NOTIFICATION_PERMISSION_REQUEST_CODE = 42
         const val THEME_PREFERENCES = "app_theme"
         const val DARK_THEME_KEY = "dark_theme"
     }

@@ -3,6 +3,7 @@ package com.akash.expiryguard.ui.navigation
 import android.net.Uri
 
 object AppRoutes {
+    const val ONBOARDING = "onboarding"
     const val HOME = "home"
     const val ADD_ITEM = "add_item"
     const val ITEM_ID = "itemId"

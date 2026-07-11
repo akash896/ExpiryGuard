@@ -11,7 +11,7 @@ class ExpiryGuardApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        container = AppContainer()
+        container = AppContainer(this)
         NotificationHelper.createReminderChannel(this)
         ExpiryReminderScheduler.scheduleDaily(this)
     }

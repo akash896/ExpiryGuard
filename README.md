@@ -5,6 +5,7 @@ ExpiryGuard is an Android app for tracking the expiry dates, value, and lifecycl
 ## Current features
 
 - Firebase Anonymous Authentication creates or reuses a user session at app start.
+- A three-page onboarding flow introduces expiry tracking, value insights, and notification reminders on first launch.
 - Cloud Firestore stores each user's data at `users/{userId}/items/{itemId}`.
 - Home groups active items by expiry urgency and provides search, category filters, and value summaries.
 - Add/Edit supports name, category, expiry date, optional purchase date, quantity, price, currency, reminder period, and notes.
@@ -76,6 +77,10 @@ Run the focused JVM tests:
 ./gradlew :app:testDebugUnitTest
 ```
 
+## First Launch
+
+On first launch, ExpiryGuard shows three onboarding pages before Home. Use Next and Back to move through them, or Skip to continue immediately. The final page offers Android 13+ notification permission; declining it does not block the app, and it can be enabled later in Android settings. Completion is stored locally, so onboarding is not shown again unless the app's local data is cleared.
+
 ## Project layout
 
 ```text
@@ -99,12 +104,13 @@ Route constants live in `ui/navigation/AppRoutes.kt`. The navigation graph in `u
 - `detail/{itemId}`
 - `settings`
 - `expense_insights`
+- `onboarding`
 
 The Home add button opens `add_item`. Tapping an item opens its detail page, where Edit opens `edit_item/{itemId}`. Saving an item, deleting an item, or archiving an item returns to the previous screen.
 
 ## Notifications
 
-ExpiryGuard creates an `expiry_reminders` notification channel on Android 8.0+ and requests `POST_NOTIFICATIONS` on Android 13+ when the app starts. An alarm is scheduled for 8:00 AM each day and enqueues the Firebase-backed WorkManager check. The manifest requests Android's exact-alarm access; when Android does not grant it, the app falls back to an inexact alarm near 8:00 AM.
+ExpiryGuard creates an `expiry_reminders` notification channel on Android 8.0+. On Android 13+, the final onboarding page explains the benefit and offers the `POST_NOTIFICATIONS` permission request. An alarm is scheduled for 8:00 AM each day and enqueues the Firebase-backed WorkManager check. The manifest requests Android's exact-alarm access; when Android does not grant it, the app falls back to an inexact alarm near 8:00 AM.
 
 An item is eligible from the configured reminder day through its expiry day, and receives at most one reminder per day. The notification includes a Stop action that disables the item's `notificationsEnabled` flag in Firestore, records a local stop marker for offline reliability, and removes the current alert. The Notify switch on a Home card or Add/Edit screen can enable reminders again. Notification text includes the category, expiry date, and price as a possible expired value when available.
 

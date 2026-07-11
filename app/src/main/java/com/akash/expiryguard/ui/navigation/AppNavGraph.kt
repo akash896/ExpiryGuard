@@ -7,6 +7,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.akash.expiryguard.data.local.AppPreferences
 import com.akash.expiryguard.data.repository.ExpiryItemRepository
 import com.akash.expiryguard.ui.screens.addedit.AddEditItemScreen
 import com.akash.expiryguard.ui.screens.addedit.AddEditItemViewModel
@@ -16,6 +17,8 @@ import com.akash.expiryguard.ui.screens.expenses.ExpenseInsightsScreen
 import com.akash.expiryguard.ui.screens.expenses.ExpenseInsightsViewModel
 import com.akash.expiryguard.ui.screens.home.HomeScreen
 import com.akash.expiryguard.ui.screens.home.HomeViewModel
+import com.akash.expiryguard.ui.screens.onboarding.OnboardingScreen
+import com.akash.expiryguard.ui.screens.onboarding.OnboardingViewModel
 import com.akash.expiryguard.ui.screens.settings.SettingsScreen
 import com.akash.expiryguard.ui.screens.settings.SettingsViewModel
 
@@ -23,13 +26,30 @@ import com.akash.expiryguard.ui.screens.settings.SettingsViewModel
 fun AppNavGraph(
     navController: NavHostController,
     repository: ExpiryItemRepository,
+    appPreferences: AppPreferences,
+    startDestination: String,
     useDarkTheme: Boolean,
     onThemeChange: (Boolean) -> Unit
 ) {
     NavHost(
         navController = navController,
-        startDestination = AppRoutes.HOME
+        startDestination = startDestination
     ) {
+        composable(AppRoutes.ONBOARDING) {
+            val viewModel: OnboardingViewModel = viewModel(
+                factory = OnboardingViewModel.Factory(appPreferences)
+            )
+            OnboardingScreen(
+                viewModel = viewModel,
+                onComplete = {
+                    navController.navigate(AppRoutes.HOME) {
+                        popUpTo(AppRoutes.ONBOARDING) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
+            )
+        }
+
         composable(AppRoutes.HOME) {
             val viewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory(repository))
             HomeScreen(
