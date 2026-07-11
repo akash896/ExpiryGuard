@@ -154,6 +154,18 @@ class FirebaseExpiryItemRepository(
             .awaitVoid()
     }
 
+    override suspend fun setNotificationsEnabled(itemId: String, enabled: Boolean) {
+        itemsCollection(signInAnonymouslyIfNeeded())
+            .document(itemId)
+            .update(
+                mapOf(
+                    "notificationsEnabled" to enabled,
+                    "updatedAt" to System.currentTimeMillis()
+                )
+            )
+            .awaitVoid()
+    }
+
     private fun itemsCollection(userId: String): CollectionReference {
         return firestore.collection("users")
             .document(userId)
@@ -172,6 +184,7 @@ class FirebaseExpiryItemRepository(
             currency = getString("currency").orEmpty().ifBlank { "INR" },
             notes = getString("notes").orEmpty(),
             reminderDaysBefore = getLong("reminderDaysBefore")?.toInt() ?: 1,
+            notificationsEnabled = getBoolean("notificationsEnabled") ?: true,
             createdAt = getLong("createdAt") ?: 0L,
             updatedAt = getLong("updatedAt") ?: 0L,
             archived = getBoolean("archived") ?: false,
@@ -192,6 +205,7 @@ class FirebaseExpiryItemRepository(
             "currency" to currency.ifBlank { "INR" },
             "notes" to notes,
             "reminderDaysBefore" to reminderDaysBefore,
+            "notificationsEnabled" to notificationsEnabled,
             "createdAt" to createdAt,
             "updatedAt" to updatedAt,
             "archived" to archived,

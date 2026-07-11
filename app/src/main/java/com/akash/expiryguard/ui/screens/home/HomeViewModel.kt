@@ -4,21 +4,25 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.akash.expiryguard.data.model.ExpensePeriod
+import com.akash.expiryguard.data.model.ExpiryCategory
 import com.akash.expiryguard.data.model.ExpiryItem
+import com.akash.expiryguard.data.model.ExpiryStatus
 import com.akash.expiryguard.data.repository.ExpiryItemRepository
 import com.akash.expiryguard.util.calculateExpenseSummary
 import com.akash.expiryguard.util.calculateTotalActiveValue
 import com.akash.expiryguard.util.calculateTotalConsumedValue
 import com.akash.expiryguard.util.calculateTotalExpiredValue
+import com.akash.expiryguard.util.getExpiryStatus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 
 class HomeViewModel(
-    repository: ExpiryItemRepository
+    private val repository: ExpiryItemRepository
 ) : ViewModel() {
     private val searchQuery = MutableStateFlow("")
     private val selectedCategory = MutableStateFlow<String?>(null)
@@ -29,11 +33,11 @@ class HomeViewModel(
         selectedCategory
     ) { items, query, category ->
         val trimmedQuery = query.trim()
+        val today = LocalDate.now()
         val filteredItems = items
             .filter { item -> trimmedQuery.isBlank() || item.name.contains(trimmedQuery, ignoreCase = true) }
-            .filter { item -> category == null || item.category == category }
+            .filter { item -> matchesCategory(item, category, today) }
 
-        val today = LocalDate.now()
         val monthSummary = calculateExpenseSummary(items, ExpensePeriod.MONTHLY, today)
 
         HomeUiState(
@@ -69,6 +73,13 @@ class HomeViewModel(
         selectedCategory.value = category
     }
 
+    fun setNotificationsEnabled(item: ExpiryItem, enabled: Boolean) {
+        if (item.id.isBlank() || item.notificationsEnabled == enabled) return
+        viewModelScope.launch {
+            repository.setNotificationsEnabled(item.id, enabled)
+        }
+    }
+
     class Factory(
         private val repository: ExpiryItemRepository
     ) : ViewModelProvider.Factory {
@@ -77,6 +88,22 @@ class HomeViewModel(
             return HomeViewModel(repository) as T
         }
     }
+}
+
+private fun matchesCategory(item: ExpiryItem, category: String?, today: LocalDate): Boolean {
+    if (category == null) return true
+
+    val belongsToExpiredCategory = isExpiredCategory(item, today)
+    return if (category == ExpiryCategory.EXPIRED.displayName) {
+        belongsToExpiredCategory
+    } else {
+        !belongsToExpiredCategory && item.category == category
+    }
+}
+
+private fun isExpiredCategory(item: ExpiryItem, today: LocalDate): Boolean {
+    return item.category == ExpiryCategory.EXPIRED.displayName ||
+        getExpiryStatus(item.expiryDate, today) == ExpiryStatus.EXPIRED
 }
 
 data class HomeUiState(

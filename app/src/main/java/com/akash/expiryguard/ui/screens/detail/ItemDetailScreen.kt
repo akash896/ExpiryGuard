@@ -30,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.akash.expiryguard.data.model.ExpiryCategory
 import com.akash.expiryguard.data.model.ExpiryItem
 import com.akash.expiryguard.data.model.ExpiryStatus
 import com.akash.expiryguard.util.daysUntilExpiry
@@ -163,7 +164,7 @@ private fun ItemDetailBody(
 
         item {
             DetailCard {
-                DetailRow("Category", item.category.ifBlank { "Other" })
+                DetailRow("Category", displayCategory(item))
                 DetailRow("Expiry date", item.expiryDate.ifBlank { "Not set" })
                 DetailRow("Time remaining", expiryDescription(item.expiryDate))
                 DetailRow("Purchase date", item.purchaseDate.ifBlank { "Not set" })
@@ -341,6 +342,17 @@ private fun consumedDescription(item: ExpiryItem): String {
         item.consumedAt.takeIf { it.isNotBlank() }?.let { "Yes, $it" } ?: "Yes"
     } else {
         "No"
+    }
+}
+
+private fun displayCategory(item: ExpiryItem): String {
+    return if (
+        item.category == ExpiryCategory.EXPIRED.displayName ||
+        getExpiryStatus(item.expiryDate) == ExpiryStatus.EXPIRED
+    ) {
+        ExpiryCategory.EXPIRED.displayName
+    } else {
+        item.category.ifBlank { "Other" }
     }
 }
 

@@ -22,6 +22,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -29,6 +30,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -36,6 +38,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.akash.expiryguard.data.model.ExpiryCategory
 import com.akash.expiryguard.data.model.ExpiryItem
 import com.akash.expiryguard.data.model.ExpiryStatus
+import com.akash.expiryguard.notifications.NotificationHelper
 import com.akash.expiryguard.util.daysUntilExpiry
 import com.akash.expiryguard.util.getExpiryStatus
 
@@ -48,11 +51,16 @@ fun HomeScreen(
     onExpenseInsightsClick: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     HomeScreenContent(
         uiState = uiState,
         onSearchQueryChange = viewModel::onSearchQueryChange,
         onCategorySelected = viewModel::onCategorySelected,
+        onNotificationEnabledChange = { item, enabled ->
+            NotificationHelper.setRemindersEnabledLocally(context, item.id, enabled)
+            viewModel.setNotificationsEnabled(item, enabled)
+        },
         onAddItemClick = onAddItemClick,
         onItemClick = onItemClick,
         onSettingsClick = onSettingsClick,
@@ -66,6 +74,7 @@ private fun HomeScreenContent(
     uiState: HomeUiState,
     onSearchQueryChange: (String) -> Unit,
     onCategorySelected: (String?) -> Unit,
+    onNotificationEnabledChange: (ExpiryItem, Boolean) -> Unit,
     onAddItemClick: () -> Unit,
     onItemClick: (String) -> Unit,
     onSettingsClick: () -> Unit,
@@ -152,7 +161,10 @@ private fun HomeScreenContent(
                             ) { item ->
                                 ExpiryItemCard(
                                     item = item,
-                                    onClick = { onItemClick(item.id) }
+                                    onClick = { onItemClick(item.id) },
+                                    onNotificationEnabledChange = { enabled ->
+                                        onNotificationEnabledChange(item, enabled)
+                                    }
                                 )
                             }
                         }
@@ -270,10 +282,13 @@ private fun CategoryFilterChips(
 @Composable
 fun ExpiryItemCard(
     item: ExpiryItem,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onNotificationEnabledChange: (Boolean) -> Unit
 ) {
     val status = getExpiryStatus(item.expiryDate)
     val isExpiredWaste = status == ExpiryStatus.EXPIRED && !item.consumed
+    val isExpiredCategory = item.category == ExpiryCategory.EXPIRED.displayName ||
+        status == ExpiryStatus.EXPIRED
 
     Card(
         onClick = onClick,
@@ -304,17 +319,36 @@ fun ExpiryItemCard(
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        text = item.category.ifBlank { "Other" },
+                        text = if (isExpiredCategory) {
+                            ExpiryCategory.EXPIRED.displayName
+                        } else {
+                            item.category.ifBlank { "Other" }
+                        },
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                Text(
-                    text = item.expiryDate.ifBlank { "No date" },
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
-                    maxLines = 1
-                )
+                Column(
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Switch(
+                            checked = item.notificationsEnabled,
+                            onCheckedChange = onNotificationEnabledChange
+                        )
+                        Text(
+                            text = "Notify",
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                    }
+                    Text(
+                        text = item.expiryDate.ifBlank { "No date" },
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1
+                    )
+                }
             }
 
             Row(
@@ -423,13 +457,20 @@ private data class HomeSection(
 )
 
 private fun groupedItems(items: List<ExpiryItem>): List<HomeSection> {
+    val expiredItems = items.filter(::isExpiredCategory)
+    val remainingItems = items - expiredItems.toSet()
     return listOf(
-        HomeSection("Expired", items.filter { getExpiryStatus(it.expiryDate) == ExpiryStatus.EXPIRED }),
-        HomeSection("Expiring Today", items.filter { getExpiryStatus(it.expiryDate) == ExpiryStatus.TODAY }),
-        HomeSection("Expiring This Week", items.filter { getExpiryStatus(it.expiryDate) == ExpiryStatus.THIS_WEEK }),
-        HomeSection("Expiring This Month", items.filter { getExpiryStatus(it.expiryDate) == ExpiryStatus.THIS_MONTH }),
-        HomeSection("Safe for Later", items.filter { getExpiryStatus(it.expiryDate) == ExpiryStatus.SAFE })
+        HomeSection("Expired", expiredItems),
+        HomeSection("Expiring Today", remainingItems.filter { getExpiryStatus(it.expiryDate) == ExpiryStatus.TODAY }),
+        HomeSection("Expiring This Week", remainingItems.filter { getExpiryStatus(it.expiryDate) == ExpiryStatus.THIS_WEEK }),
+        HomeSection("Expiring This Month", remainingItems.filter { getExpiryStatus(it.expiryDate) == ExpiryStatus.THIS_MONTH }),
+        HomeSection("Safe for Later", remainingItems.filter { getExpiryStatus(it.expiryDate) == ExpiryStatus.SAFE })
     )
+}
+
+private fun isExpiredCategory(item: ExpiryItem): Boolean {
+    return item.category == ExpiryCategory.EXPIRED.displayName ||
+        getExpiryStatus(item.expiryDate) == ExpiryStatus.EXPIRED
 }
 
 private fun itemDetailText(item: ExpiryItem): String {

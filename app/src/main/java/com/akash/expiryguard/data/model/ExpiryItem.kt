@@ -11,6 +11,7 @@ data class ExpiryItem(
     val currency: String = "INR",
     val notes: String = "",
     val reminderDaysBefore: Int = 1,
+    val notificationsEnabled: Boolean = true,
     val createdAt: Long = 0L,
     val updatedAt: Long = 0L,
     val archived: Boolean = false,

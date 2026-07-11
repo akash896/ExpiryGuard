@@ -7,5 +7,6 @@ enum class ExpiryCategory(val displayName: String) {
     WARRANTY("Warranty"),
     COSMETIC("Cosmetic"),
     SUBSCRIPTION("Subscription"),
+    EXPIRED("Expired"),
     OTHER("Other")
 }

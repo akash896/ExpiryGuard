@@ -35,6 +35,7 @@ class AddEditItemViewModel(
     fun onPriceChange(value: String) = updateState { copy(price = value, priceError = null) }
     fun onCurrencyChange(value: String) = updateState { copy(currency = value.ifBlank { "INR" }) }
     fun onReminderDaysBeforeChange(value: Int) = updateState { copy(reminderDaysBefore = value, reminderError = null) }
+    fun onNotificationsEnabledChange(value: Boolean) = updateState { copy(notificationsEnabled = value) }
     fun onNotesChange(value: String) = updateState { copy(notes = value) }
 
     fun saveItem(onSuccess: () -> Unit) {
@@ -58,6 +59,7 @@ class AddEditItemViewModel(
                     currency = validatedState.currency.ifBlank { "INR" },
                     notes = validatedState.notes.trim(),
                     reminderDaysBefore = validatedState.reminderDaysBefore,
+                    notificationsEnabled = validatedState.notificationsEnabled,
                     createdAt = validatedState.createdAt,
                     updatedAt = now,
                     archived = validatedState.archived,
@@ -132,6 +134,7 @@ data class AddEditItemUiState(
     val price: String = "",
     val currency: String = "INR",
     val reminderDaysBefore: Int = 1,
+    val notificationsEnabled: Boolean = true,
     val notes: String = "",
     val createdAt: Long = 0L,
     val archived: Boolean = false,
@@ -181,6 +184,7 @@ data class AddEditItemUiState(
                 reminderDaysBefore = item.reminderDaysBefore,
                 notes = item.notes,
                 createdAt = item.createdAt,
+                notificationsEnabled = item.notificationsEnabled,
                 archived = item.archived,
                 consumed = item.consumed,
                 consumedAt = item.consumedAt,

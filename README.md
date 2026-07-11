@@ -12,6 +12,9 @@ ExpiryGuard is an Android app for tracking the expiry dates, value, and lifecycl
 - Item Detail shows all saved fields, expiry timing, created/updated timestamps, value state, and lifecycle actions.
 - An item can be marked consumed, restored to not consumed, archived, or deleted. Archiving and deleting require confirmation.
 - Navigation uses explicit routes for Home, Add Item, Edit Item, Item Detail, Settings, and Expense Insights. Screens other than Home provide a back action in the top app bar.
+- An 8:00 AM alarm enqueues the Firebase-backed WorkManager check while items are within their configured reminder window.
+- Each item has a Notify switch, and the notification itself has a Stop action that disables reminders for that item.
+- Expired items are shown under the dynamic Expired category without losing their original category for expense history. Expired can also be chosen when adding an item.
 
 ## Technology
 
@@ -97,6 +100,18 @@ Route constants live in `ui/navigation/AppRoutes.kt`. The navigation graph in `u
 
 The Home add button opens `add_item`. Tapping an item opens its detail page, where Edit opens `edit_item/{itemId}`. Saving an item, deleting an item, or archiving an item returns to the previous screen.
 
+## Notifications
+
+ExpiryGuard creates an `expiry_reminders` notification channel on Android 8.0+ and requests `POST_NOTIFICATIONS` on Android 13+ when the app starts. An alarm is scheduled for 8:00 AM each day and enqueues the Firebase-backed WorkManager check. The manifest requests Android's exact-alarm access; when Android does not grant it, the app falls back to an inexact alarm near 8:00 AM.
+
+An item is eligible from the configured reminder day through its expiry day, and receives at most one reminder per day. The notification includes a Stop action that disables the item's `notificationsEnabled` flag in Firestore, records a local stop marker for offline reliability, and removes the current alert. The Notify switch on a Home card or Add/Edit screen can enable reminders again. Notification text includes the category, expiry date, and price as a possible expired value when available.
+
+If the device was off at 8:00 AM, the boot receiver reschedules the next alarm and runs one missed reminder check after boot. Android can still defer background work when network access is unavailable, and exact timing requires the user to allow exact alarms in system settings on Android 12+.
+
+## Expired Category
+
+The Expired filter includes any item whose expiry date has passed, plus items deliberately saved with the `Expired` category. This is a dynamic display category: automatically expired items keep their original stored category so existing expense breakdowns remain meaningful.
+
 ## Development notes
 
-The current MVP deliberately excludes barcode scanning, OCR, image uploads, payments, shared households, Cloud Functions, and AI features. Notifications remain the next substantial feature: create a notification channel, request Android 13+ notification permission, and schedule a daily WorkManager job that evaluates each active item's reminder window.
+The current MVP deliberately excludes barcode scanning, OCR, image uploads, payments, shared households, Cloud Functions, and AI features.

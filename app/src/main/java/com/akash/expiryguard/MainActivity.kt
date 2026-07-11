@@ -1,7 +1,6 @@
 package com.akash.expiryguard
 
 import android.Manifest
-import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -18,9 +17,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.akash.expiryguard.data.repository.ExpiryItemRepository
+import com.akash.expiryguard.notifications.NotificationHelper
 import com.akash.expiryguard.ui.ExpiryGuardApp
 import com.akash.expiryguard.ui.theme.ExpiryGuardTheme
 import kotlinx.coroutines.launch
@@ -65,12 +64,7 @@ class MainActivity : ComponentActivity() {
     private fun requestNotificationPermissionIfNeeded() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
 
-        val hasPermission = ContextCompat.checkSelfPermission(
-            this,
-            Manifest.permission.POST_NOTIFICATIONS
-        ) == PackageManager.PERMISSION_GRANTED
-
-        if (!hasPermission) {
+        if (!NotificationHelper.canPostNotifications(this)) {
             ActivityCompat.requestPermissions(
                 this,
                 arrayOf(Manifest.permission.POST_NOTIFICATIONS),

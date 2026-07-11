@@ -23,6 +23,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -65,6 +66,7 @@ fun AddEditItemScreen(
         onPriceChange = viewModel::onPriceChange,
         onCurrencyChange = viewModel::onCurrencyChange,
         onReminderDaysBeforeChange = viewModel::onReminderDaysBeforeChange,
+        onNotificationsEnabledChange = viewModel::onNotificationsEnabledChange,
         onNotesChange = viewModel::onNotesChange,
         onSaveClick = { viewModel.saveItem(onSuccess = onNavigateBack) }
     )
@@ -84,6 +86,7 @@ private fun AddEditItemContent(
     onPriceChange: (String) -> Unit,
     onCurrencyChange: (String) -> Unit,
     onReminderDaysBeforeChange: (Int) -> Unit,
+    onNotificationsEnabledChange: (Boolean) -> Unit,
     onNotesChange: (String) -> Unit,
     onSaveClick: () -> Unit
 ) {
@@ -121,6 +124,21 @@ private fun AddEditItemContent(
             } else {
                 uiState.loadErrorMessage?.let { message ->
                     item { ErrorText(message = message) }
+                }
+
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
+                            Switch(
+                                checked = uiState.notificationsEnabled,
+                                onCheckedChange = onNotificationsEnabledChange
+                            )
+                            Text(text = "Notify", style = MaterialTheme.typography.labelLarge)
+                        }
+                    }
                 }
 
                 item {

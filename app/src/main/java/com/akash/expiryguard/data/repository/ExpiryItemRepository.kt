@@ -14,4 +14,5 @@ interface ExpiryItemRepository {
     suspend fun archiveItem(itemId: String)
     suspend fun markItemConsumed(itemId: String, consumedAt: String)
     suspend fun markItemNotConsumed(itemId: String)
+    suspend fun setNotificationsEnabled(itemId: String, enabled: Boolean)
 }
