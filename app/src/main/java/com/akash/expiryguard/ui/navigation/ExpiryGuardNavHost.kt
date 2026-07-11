@@ -11,6 +11,7 @@ import com.akash.expiryguard.data.repository.ExpiryItemRepository
 import com.akash.expiryguard.ui.screens.addedit.AddEditItemScreen
 import com.akash.expiryguard.ui.screens.addedit.AddEditItemViewModel
 import com.akash.expiryguard.ui.screens.detail.ItemDetailScreen
+import com.akash.expiryguard.ui.screens.detail.ItemDetailViewModel
 import com.akash.expiryguard.ui.screens.expenses.ExpenseInsightsScreen
 import com.akash.expiryguard.ui.screens.expenses.ExpenseInsightsViewModel
 import com.akash.expiryguard.ui.screens.home.HomeScreen
@@ -70,8 +71,19 @@ fun ExpiryGuardNavHost(
             )
         }
 
-        composable(ExpiryGuardDestination.DETAIL_ROUTE) {
-            ItemDetailScreen()
+        composable(
+            route = ExpiryGuardDestination.DETAIL_ROUTE,
+            arguments = listOf(navArgument("itemId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val itemId = requireNotNull(backStackEntry.arguments?.getString("itemId"))
+            val viewModel: ItemDetailViewModel = viewModel(
+                factory = ItemDetailViewModel.Factory(repository, itemId)
+            )
+            ItemDetailScreen(
+                viewModel = viewModel,
+                onNavigateBack = { navController.popBackStack() },
+                onEditItem = { id -> navController.navigate(ExpiryGuardDestination.addEdit(id)) }
+            )
         }
 
         composable(ExpiryGuardDestination.SETTINGS) {
