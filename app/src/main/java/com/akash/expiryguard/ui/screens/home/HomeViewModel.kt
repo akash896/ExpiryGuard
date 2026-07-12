@@ -7,6 +7,9 @@ import com.akash.expiryguard.data.model.ExpensePeriod
 import com.akash.expiryguard.data.model.ExpiryCategory
 import com.akash.expiryguard.data.model.ExpiryItem
 import com.akash.expiryguard.data.model.ExpiryStatus
+import com.akash.expiryguard.data.model.QuickAddTemplate
+import com.akash.expiryguard.data.model.QuickAddTemplates
+import com.akash.expiryguard.data.local.AppPreferences
 import com.akash.expiryguard.data.repository.ExpiryItemRepository
 import com.akash.expiryguard.util.calculateExpenseSummary
 import com.akash.expiryguard.util.calculateTotalActiveValue
@@ -22,7 +25,8 @@ import kotlinx.coroutines.launch
 import java.time.LocalDate
 
 class HomeViewModel(
-    private val repository: ExpiryItemRepository
+    private val repository: ExpiryItemRepository,
+    private val appPreferences: AppPreferences
 ) : ViewModel() {
     private val searchQuery = MutableStateFlow("")
     private val selectedCategory = MutableStateFlow<String?>(null)
@@ -30,8 +34,10 @@ class HomeViewModel(
     val uiState = combine(
         repository.observeActiveItems(),
         searchQuery,
-        selectedCategory
-    ) { items, query, category ->
+        selectedCategory,
+        appPreferences.quickAddTemplateOrder,
+        appPreferences.categoryOrder
+    ) { items, query, category, templateOrder, categoryOrder ->
         val trimmedQuery = query.trim()
         val today = LocalDate.now()
         val filteredItems = items
@@ -44,6 +50,8 @@ class HomeViewModel(
             items = filteredItems,
             searchQuery = query,
             selectedCategory = category,
+            quickAddTemplates = templatesInOrder(templateOrder),
+            categories = categoryOrder,
             totalActiveValue = calculateTotalActiveValue(items, today),
             totalExpiredValue = calculateTotalExpiredValue(items, today),
             totalConsumedValue = calculateTotalConsumedValue(items),
@@ -85,13 +93,18 @@ class HomeViewModel(
     }
 
     class Factory(
-        private val repository: ExpiryItemRepository
+        private val repository: ExpiryItemRepository,
+        private val appPreferences: AppPreferences
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return HomeViewModel(repository) as T
+            return HomeViewModel(repository, appPreferences) as T
         }
     }
+}
+
+private fun templatesInOrder(templateIds: List<String>): List<QuickAddTemplate> {
+    return templateIds.mapNotNull(QuickAddTemplates::find)
 }
 
 private fun matchesCategory(item: ExpiryItem, category: String?, today: LocalDate): Boolean {
@@ -114,6 +127,8 @@ data class HomeUiState(
     val items: List<ExpiryItem> = emptyList(),
     val searchQuery: String = "",
     val selectedCategory: String? = null,
+    val quickAddTemplates: List<QuickAddTemplate> = QuickAddTemplates.all,
+    val categories: List<String> = ExpiryCategory.entries.map { it.displayName },
     val totalActiveValue: Double = 0.0,
     val totalExpiredValue: Double = 0.0,
     val totalConsumedValue: Double = 0.0,

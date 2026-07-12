@@ -5,16 +5,22 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -37,6 +43,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,12 +58,12 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.Settings
 import com.akash.expiryguard.data.model.ExpiryCategory
 import com.akash.expiryguard.data.model.ExpiryItem
 import com.akash.expiryguard.data.model.ExpiryStatus
 import com.akash.expiryguard.data.model.QuickAddTemplate
-import com.akash.expiryguard.data.model.QuickAddTemplates
 import com.akash.expiryguard.notifications.NotificationHelper
 import com.akash.expiryguard.util.daysUntilExpiry
 import com.akash.expiryguard.util.getExpiryStatus
@@ -71,7 +78,9 @@ fun HomeScreen(
     onShoppingListClick: () -> Unit,
     onCalendarClick: () -> Unit,
     onSettingsClick: () -> Unit,
-    onExpenseInsightsClick: () -> Unit
+    onExpenseInsightsClick: () -> Unit,
+    onReorderQuickAddClick: () -> Unit,
+    onReorderCategoriesClick: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -121,6 +130,8 @@ fun HomeScreen(
         onCalendarClick = onCalendarClick,
         onSettingsClick = onSettingsClick,
         onExpenseInsightsClick = onExpenseInsightsClick,
+        onReorderQuickAddClick = onReorderQuickAddClick,
+        onReorderCategoriesClick = onReorderCategoriesClick,
         notificationsAllowed = notificationsAllowed,
         snackbarHostState = snackbarHostState
     )
@@ -140,6 +151,8 @@ private fun HomeScreenContent(
     onCalendarClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onExpenseInsightsClick: () -> Unit,
+    onReorderQuickAddClick: () -> Unit,
+    onReorderCategoriesClick: () -> Unit,
     notificationsAllowed: Boolean,
     snackbarHostState: SnackbarHostState
 ) {
@@ -164,18 +177,12 @@ private fun HomeScreenContent(
             )
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
-        ,
-        floatingActionButton = {
-            FloatingActionButton(onClick = onAddItemClick) {
-                Icon(imageVector = Icons.Filled.Add, contentDescription = "Add item")
-            }
-        }
     ) { innerPadding ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
-            contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 96.dp),
+            contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             item {
@@ -183,7 +190,11 @@ private fun HomeScreenContent(
             }
 
             item {
-                QuickAddSection(onTemplateClick = onQuickAddClick)
+                QuickAddSection(
+                    templates = uiState.quickAddTemplates,
+                    onTemplateClick = onQuickAddClick,
+                    onReorderClick = onReorderQuickAddClick
+                )
             }
 
             item {
@@ -196,19 +207,33 @@ private fun HomeScreenContent(
             }
 
             item {
-                OutlinedTextField(
-                    value = uiState.searchQuery,
-                    onValueChange = onSearchQueryChange,
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    label = { Text(text = "Search by item name") }
-                )
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    FloatingActionButton(
+                        onClick = onAddItemClick,
+                        modifier = Modifier.size(52.dp)
+                    ) {
+                        Icon(imageVector = Icons.Filled.Add, contentDescription = "Add item")
+                    }
+                    OutlinedTextField(
+                        value = uiState.searchQuery,
+                        onValueChange = onSearchQueryChange,
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        label = { Text(text = "Search") }
+                    )
+                }
             }
 
             item {
                 CategoryFilterChips(
+                    categories = uiState.categories,
                     selectedCategory = uiState.selectedCategory,
-                    onCategorySelected = onCategorySelected
+                    onCategorySelected = onCategorySelected,
+                    onReorderClick = onReorderCategoriesClick
                 )
             }
 
@@ -257,21 +282,29 @@ private fun HomeScreenContent(
 }
 
 @Composable
-private fun QuickAddSection(onTemplateClick: (QuickAddTemplate) -> Unit) {
+private fun QuickAddSection(
+    templates: List<QuickAddTemplate>,
+    onTemplateClick: (QuickAddTemplate) -> Unit,
+    onReorderClick: () -> Unit
+) {
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+    LaunchedEffect(templates.map { it.templateId }) {
+        listState.scrollToItem(0)
+    }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(
-            text = "Quick add",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold
-        )
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(QuickAddTemplates.all, key = { it.templateId }) { template ->
+        ReorderSectionHeader(title = "Quick add", onClick = onReorderClick)
+        LazyRow(
+            state = listState,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(templates, key = { it.templateId }) { template ->
                 AssistChip(
                     onClick = { onTemplateClick(template) },
                     label = { Text(text = template.displayName) }
                 )
             }
         }
+        HorizontalScrollIndicator(listState)
     }
 }
 
@@ -357,10 +390,18 @@ private fun SummaryMetric(
 
 @Composable
 private fun CategoryFilterChips(
+    categories: List<String>,
     selectedCategory: String?,
-    onCategorySelected: (String?) -> Unit
+    onCategorySelected: (String?) -> Unit,
+    onReorderClick: () -> Unit
 ) {
-    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+    LaunchedEffect(categories) {
+        listState.scrollToItem(0)
+    }
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        ReorderSectionHeader(title = "Categories", onClick = onReorderClick)
+        LazyRow(state = listState, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         item {
             FilterChip(
                 selected = selectedCategory == null,
@@ -368,13 +409,58 @@ private fun CategoryFilterChips(
                 label = { Text(text = "All") }
             )
         }
-        items(ExpiryCategory.entries.toList()) { category ->
+            items(categories, key = { it }) { category ->
             FilterChip(
-                selected = selectedCategory == category.displayName,
-                onClick = { onCategorySelected(category.displayName) },
-                label = { Text(text = category.displayName) }
+                    selected = selectedCategory == category,
+                    onClick = { onCategorySelected(category) },
+                    label = { Text(text = category) }
             )
         }
+        }
+        HorizontalScrollIndicator(listState)
+    }
+}
+
+@Composable
+private fun ReorderSectionHeader(title: String, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold
+        )
+        Spacer(modifier = Modifier.weight(1f))
+        IconButton(onClick = onClick) {
+            Icon(imageVector = Icons.Filled.DragHandle, contentDescription = "Reorder $title")
+        }
+    }
+}
+
+@Composable
+private fun HorizontalScrollIndicator(listState: LazyListState) {
+    val layoutInfo = listState.layoutInfo
+    val visibleCount = layoutInfo.visibleItemsInfo.size.coerceAtLeast(1)
+    val totalItems = layoutInfo.totalItemsCount.coerceAtLeast(1)
+    val scrollableItems = (totalItems - visibleCount).coerceAtLeast(1)
+    val progress = (listState.firstVisibleItemIndex.toFloat() / scrollableItems).coerceIn(0f, 1f)
+    val thumbFraction = (visibleCount.toFloat() / totalItems).coerceIn(0.2f, 1f)
+
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(2.dp)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(thumbFraction)
+                .height(2.dp)
+                .offset(x = (maxWidth - (maxWidth * thumbFraction)) * progress)
+                .background(MaterialTheme.colorScheme.primary)
+        )
     }
 }
 

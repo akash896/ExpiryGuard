@@ -8,7 +8,7 @@ ExpiryGuard is an Android app for tracking the expiry dates, value, and lifecycl
 - A three-page onboarding flow introduces expiry tracking, value insights, and notification reminders on first launch, followed by Login / Sign up.
 - Cloud Firestore stores each user's data at `users/{userId}/items/{itemId}`.
 - Home groups active items by expiry urgency and provides search, category filters, and value summaries. Its bottom-end add button leaves every list item fully scrollable and readable.
-- Home includes Quick Add templates for common food, medicine, document, warranty, and subscription items.
+- Home includes Quick Add templates for common food, medicine, document, warranty, and subscription items. Quick Add and category-filter orders are saved locally and can be rearranged from their drag-handle controls.
 - Calendar View shows upcoming expiries by month, highlights dates with expiring items, and opens item details from a selected date.
 - Shopping List keeps manual and rebuy items, with checked items separated from items still to buy.
 - Add/Edit supports name, category, expiry date, optional purchase date, quantity, price, currency, reminder period, and notes.

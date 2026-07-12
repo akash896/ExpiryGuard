@@ -30,6 +30,9 @@ import com.akash.expiryguard.ui.screens.settings.SettingsScreen
 import com.akash.expiryguard.ui.screens.settings.SettingsViewModel
 import com.akash.expiryguard.ui.screens.shopping.ShoppingListScreen
 import com.akash.expiryguard.ui.screens.shopping.ShoppingListViewModel
+import com.akash.expiryguard.ui.screens.reorder.HomeOrderScreen
+import com.akash.expiryguard.ui.screens.reorder.HomeOrderType
+import com.akash.expiryguard.ui.screens.reorder.HomeOrderViewModel
 
 @Composable
 fun AppNavGraph(
@@ -77,7 +80,9 @@ fun AppNavGraph(
         }
 
         composable(AppRoutes.HOME) {
-            val viewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory(repository))
+            val viewModel: HomeViewModel = viewModel(
+                factory = HomeViewModel.Factory(repository, appPreferences)
+            )
             HomeScreen(
                 viewModel = viewModel,
                 onAddItemClick = { navController.navigate(AppRoutes.ADD_ITEM) },
@@ -88,7 +93,25 @@ fun AppNavGraph(
                 onShoppingListClick = { navController.navigate(AppRoutes.SHOPPING_LIST) },
                 onCalendarClick = { navController.navigate(AppRoutes.CALENDAR) },
                 onSettingsClick = { navController.navigate(AppRoutes.SETTINGS) },
-                onExpenseInsightsClick = { navController.navigate(AppRoutes.EXPENSE_INSIGHTS) }
+                onExpenseInsightsClick = { navController.navigate(AppRoutes.EXPENSE_INSIGHTS) },
+                onReorderQuickAddClick = { navController.navigate(AppRoutes.QUICK_ADD_ORDER) },
+                onReorderCategoriesClick = { navController.navigate(AppRoutes.CATEGORY_ORDER) }
+            )
+        }
+
+        composable(AppRoutes.QUICK_ADD_ORDER) {
+            HomeOrderDestination(
+                appPreferences = appPreferences,
+                orderType = HomeOrderType.QUICK_ADD,
+                onNavigateBack = navController::popBackStack
+            )
+        }
+
+        composable(AppRoutes.CATEGORY_ORDER) {
+            HomeOrderDestination(
+                appPreferences = appPreferences,
+                orderType = HomeOrderType.CATEGORIES,
+                onNavigateBack = navController::popBackStack
             )
         }
 
@@ -184,6 +207,18 @@ fun AppNavGraph(
             )
         }
     }
+}
+
+@Composable
+private fun HomeOrderDestination(
+    appPreferences: AppPreferences,
+    orderType: HomeOrderType,
+    onNavigateBack: () -> Unit
+) {
+    val viewModel: HomeOrderViewModel = viewModel(
+        factory = HomeOrderViewModel.Factory(appPreferences, orderType)
+    )
+    HomeOrderScreen(viewModel = viewModel, onNavigateBack = onNavigateBack)
 }
 
 @Composable
