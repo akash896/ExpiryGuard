@@ -76,7 +76,11 @@ class HomeViewModel(
     fun setNotificationsEnabled(item: ExpiryItem, enabled: Boolean) {
         if (item.id.isBlank() || item.notificationsEnabled == enabled) return
         viewModelScope.launch {
-            repository.setNotificationsEnabled(item.id, enabled)
+            try {
+                repository.setNotificationsEnabled(item.id, enabled)
+            } catch (_: Exception) {
+                // The Firestore listener keeps the switch aligned with the saved value.
+            }
         }
     }
 

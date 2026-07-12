@@ -173,6 +173,7 @@ class AddEditItemViewModel(
 }
 
 data class AddEditItemUiState(
+    val id: String = "",
     val name: String = "",
     val category: String = ExpiryCategory.OTHER.displayName,
     val expiryDate: String = "",
@@ -232,6 +233,7 @@ data class AddEditItemUiState(
 
         fun fromItem(item: ExpiryItem): AddEditItemUiState {
             return AddEditItemUiState(
+                id = item.id,
                 name = item.name,
                 category = item.category.ifBlank { ExpiryCategory.OTHER.displayName },
                 expiryDate = item.expiryDate,

@@ -4,6 +4,7 @@ import android.net.Uri
 
 object AppRoutes {
     const val ONBOARDING = "onboarding"
+    const val AUTHENTICATION = "authentication"
     const val HOME = "home"
     const val ADD_ITEM = "add_item"
     const val TEMPLATE_ID = "templateId"

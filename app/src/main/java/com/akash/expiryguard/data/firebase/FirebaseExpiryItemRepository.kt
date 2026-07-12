@@ -18,9 +18,10 @@ class FirebaseExpiryItemRepository(
 ) : ExpiryItemRepository {
 
     override suspend fun signInAnonymouslyIfNeeded(): String {
-        auth.currentUser?.uid?.let { return it }
-        val result = auth.signInAnonymously().awaitResult()
-        return result.user?.uid ?: error("Anonymous sign-in did not return a user.")
+        return auth.currentUser
+            ?.takeUnless { it.isAnonymous }
+            ?.uid
+            ?: error("A signed-in account is required.")
     }
 
     override fun observeItems(): Flow<List<ExpiryItem>> = callbackFlow {

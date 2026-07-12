@@ -1,5 +1,9 @@
 package com.akash.expiryguard.ui.screens.addedit
 
+import android.Manifest
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -29,15 +33,18 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.akash.expiryguard.data.model.ExpiryCategory
+import com.akash.expiryguard.notifications.NotificationHelper
 import com.akash.expiryguard.util.formatIsoDate
 import com.akash.expiryguard.util.parseIsoDate
 import java.time.Instant
@@ -53,6 +60,22 @@ fun AddEditItemScreen(
     onNavigateBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    var notificationsAllowed by remember { mutableStateOf(NotificationHelper.canPostNotifications(context)) }
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        notificationsAllowed = NotificationHelper.canPostNotifications(context)
+        val enabled = granted && notificationsAllowed
+        NotificationHelper.setRemindersEnabledLocally(context, uiState.id, enabled)
+        viewModel.onNotificationsEnabledChange(enabled)
+    }
+
+    LaunchedEffect(notificationsAllowed, uiState.notificationsEnabled) {
+        if (!notificationsAllowed && uiState.notificationsEnabled) {
+            viewModel.onNotificationsEnabledChange(false)
+        }
+    }
 
     AddEditItemContent(
         uiState = uiState,
@@ -66,7 +89,17 @@ fun AddEditItemScreen(
         onPriceChange = viewModel::onPriceChange,
         onCurrencyChange = viewModel::onCurrencyChange,
         onReminderDaysBeforeChange = viewModel::onReminderDaysBeforeChange,
-        onNotificationsEnabledChange = viewModel::onNotificationsEnabledChange,
+        notificationsAllowed = notificationsAllowed,
+        onNotificationsEnabledChange = { enabled ->
+            if (enabled && !notificationsAllowed) {
+                if (NotificationHelper.canRequestNotificationPermission(context)) {
+                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
+            } else {
+                NotificationHelper.setRemindersEnabledLocally(context, uiState.id, enabled)
+                viewModel.onNotificationsEnabledChange(enabled)
+            }
+        },
         onNotesChange = viewModel::onNotesChange,
         onSaveClick = { viewModel.saveItem(onSuccess = onNavigateBack) }
     )
@@ -86,6 +119,7 @@ private fun AddEditItemContent(
     onPriceChange: (String) -> Unit,
     onCurrencyChange: (String) -> Unit,
     onReminderDaysBeforeChange: (Int) -> Unit,
+    notificationsAllowed: Boolean,
     onNotificationsEnabledChange: (Boolean) -> Unit,
     onNotesChange: (String) -> Unit,
     onSaveClick: () -> Unit
@@ -133,10 +167,17 @@ private fun AddEditItemContent(
                     ) {
                         Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
                             Switch(
-                                checked = uiState.notificationsEnabled,
+                                checked = uiState.notificationsEnabled && notificationsAllowed,
                                 onCheckedChange = onNotificationsEnabledChange
                             )
                             Text(text = "Notify", style = MaterialTheme.typography.labelLarge)
+                            if (!notificationsAllowed) {
+                                Text(
+                                    text = "Allow notifications to enable reminders",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
                     }
                 }

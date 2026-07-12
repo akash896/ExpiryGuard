@@ -24,6 +24,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,8 +49,8 @@ fun ItemDetailScreen(
     onAddToShoppingList: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    var showDeleteConfirmation by mutableStateOf(false)
-    var showArchiveConfirmation by mutableStateOf(false)
+    var showDeleteConfirmation by remember { mutableStateOf(false) }
+    var showArchiveConfirmation by remember { mutableStateOf(false) }
 
     ItemDetailContent(
         uiState = uiState,

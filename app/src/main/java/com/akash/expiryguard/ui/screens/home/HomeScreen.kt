@@ -1,5 +1,9 @@
 package com.akash.expiryguard.ui.screens.home
 
+import android.Manifest
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -19,10 +23,14 @@ import androidx.compose.material3.AssistChip
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -30,6 +38,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -37,6 +49,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Settings
 import com.akash.expiryguard.data.model.ExpiryCategory
 import com.akash.expiryguard.data.model.ExpiryItem
 import com.akash.expiryguard.data.model.ExpiryStatus
@@ -45,6 +60,7 @@ import com.akash.expiryguard.data.model.QuickAddTemplates
 import com.akash.expiryguard.notifications.NotificationHelper
 import com.akash.expiryguard.util.daysUntilExpiry
 import com.akash.expiryguard.util.getExpiryStatus
+import kotlinx.coroutines.launch
 
 @Composable
 fun HomeScreen(
@@ -59,14 +75,44 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+    var notificationsAllowed by remember { mutableStateOf(NotificationHelper.canPostNotifications(context)) }
+    var pendingNotificationItem by remember { mutableStateOf<ExpiryItem?>(null) }
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        notificationsAllowed = NotificationHelper.canPostNotifications(context)
+        val item = pendingNotificationItem
+        pendingNotificationItem = null
+        if (granted && notificationsAllowed && item != null) {
+            NotificationHelper.setRemindersEnabledLocally(context, item.id, true)
+            viewModel.setNotificationsEnabled(item, true)
+        } else {
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar("Allow notifications before enabling item reminders.")
+            }
+        }
+    }
 
     HomeScreenContent(
         uiState = uiState,
         onSearchQueryChange = viewModel::onSearchQueryChange,
         onCategorySelected = viewModel::onCategorySelected,
         onNotificationEnabledChange = { item, enabled ->
-            NotificationHelper.setRemindersEnabledLocally(context, item.id, enabled)
-            viewModel.setNotificationsEnabled(item, enabled)
+            if (enabled && !notificationsAllowed) {
+                if (NotificationHelper.canRequestNotificationPermission(context)) {
+                    pendingNotificationItem = item
+                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                } else {
+                    coroutineScope.launch {
+                        snackbarHostState.showSnackbar("Turn on notifications in system Settings before enabling reminders.")
+                    }
+                }
+            } else {
+                NotificationHelper.setRemindersEnabledLocally(context, item.id, enabled)
+                viewModel.setNotificationsEnabled(item, enabled)
+            }
         },
         onAddItemClick = onAddItemClick,
         onQuickAddClick = onQuickAddClick,
@@ -74,7 +120,9 @@ fun HomeScreen(
         onShoppingListClick = onShoppingListClick,
         onCalendarClick = onCalendarClick,
         onSettingsClick = onSettingsClick,
-        onExpenseInsightsClick = onExpenseInsightsClick
+        onExpenseInsightsClick = onExpenseInsightsClick,
+        notificationsAllowed = notificationsAllowed,
+        snackbarHostState = snackbarHostState
     )
 }
 
@@ -91,7 +139,9 @@ private fun HomeScreenContent(
     onShoppingListClick: () -> Unit,
     onCalendarClick: () -> Unit,
     onSettingsClick: () -> Unit,
-    onExpenseInsightsClick: () -> Unit
+    onExpenseInsightsClick: () -> Unit,
+    notificationsAllowed: Boolean,
+    snackbarHostState: SnackbarHostState
 ) {
     Scaffold(
         topBar = {
@@ -104,19 +154,20 @@ private fun HomeScreenContent(
                     TextButton(onClick = onExpenseInsightsClick) {
                         Text(text = "Insights")
                     }
-                    TextButton(onClick = onSettingsClick) {
-                        Text(text = "Settings")
+                    IconButton(onClick = onSettingsClick) {
+                        Icon(
+                            imageVector = Icons.Filled.Settings,
+                            contentDescription = "Settings"
+                        )
                     }
                 }
             )
         },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+        ,
         floatingActionButton = {
             FloatingActionButton(onClick = onAddItemClick) {
-                Text(
-                    text = "+",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.SemiBold
-                )
+                Icon(imageVector = Icons.Filled.Add, contentDescription = "Add item")
             }
         }
     ) { innerPadding ->
@@ -124,7 +175,7 @@ private fun HomeScreenContent(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
-            contentPadding = PaddingValues(16.dp),
+            contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 96.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             item {
@@ -191,6 +242,7 @@ private fun HomeScreenContent(
                                 ExpiryItemCard(
                                     item = item,
                                     onClick = { onItemClick(item.id) },
+                                    notificationsAllowed = notificationsAllowed,
                                     onNotificationEnabledChange = { enabled ->
                                         onNotificationEnabledChange(item, enabled)
                                     }
@@ -331,6 +383,7 @@ private fun CategoryFilterChips(
 fun ExpiryItemCard(
     item: ExpiryItem,
     onClick: () -> Unit,
+    notificationsAllowed: Boolean,
     onNotificationEnabledChange: (Boolean) -> Unit
 ) {
     val status = getExpiryStatus(item.expiryDate)
@@ -382,7 +435,7 @@ fun ExpiryItemCard(
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Switch(
-                            checked = item.notificationsEnabled,
+                            checked = item.notificationsEnabled && notificationsAllowed,
                             onCheckedChange = onNotificationEnabledChange
                         )
                         Text(

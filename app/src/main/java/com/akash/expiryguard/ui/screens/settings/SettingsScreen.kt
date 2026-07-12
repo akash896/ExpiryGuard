@@ -44,6 +44,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.google.firebase.auth.FirebaseAuth
 import com.akash.expiryguard.data.model.CategoryReminderDefaults
 import com.akash.expiryguard.data.model.NotificationSettings
 import com.akash.expiryguard.notifications.ExpiryReminderScheduler
@@ -176,7 +177,12 @@ private fun SettingsContent(
                 }
             }
             item { HorizontalDivider() }
-            item { SettingRow(label = "Signed-in user", value = "Anonymous user") }
+            item {
+                SettingRow(
+                    label = "Signed-in user",
+                    value = FirebaseAuth.getInstance().currentUser?.displayName ?: "Username account"
+                )
+            }
             item {
                 SettingRow(
                     label = "Notifications",

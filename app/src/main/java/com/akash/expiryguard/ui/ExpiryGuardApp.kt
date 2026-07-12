@@ -3,6 +3,7 @@ package com.akash.expiryguard.ui
 import androidx.compose.runtime.Composable
 import androidx.navigation.compose.rememberNavController
 import com.akash.expiryguard.data.local.AppPreferences
+import com.akash.expiryguard.data.auth.FirebaseAuthRepository
 import com.akash.expiryguard.data.repository.ExpiryItemRepository
 import com.akash.expiryguard.data.repository.ShoppingListRepository
 import com.akash.expiryguard.ui.navigation.AppNavGraph
@@ -19,6 +20,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 fun ExpiryGuardApp(
     repository: ExpiryItemRepository,
     shoppingListRepository: ShoppingListRepository,
+    authRepository: FirebaseAuthRepository,
     appPreferences: AppPreferences,
     useDarkTheme: Boolean,
     onThemeChange: (Boolean) -> Unit
@@ -39,8 +41,13 @@ fun ExpiryGuardApp(
         navController = navController,
         repository = repository,
         shoppingListRepository = shoppingListRepository,
+        authRepository = authRepository,
         appPreferences = appPreferences,
-        startDestination = if (onboardingCompleted == true) AppRoutes.HOME else AppRoutes.ONBOARDING,
+        startDestination = when {
+            onboardingCompleted != true -> AppRoutes.ONBOARDING
+            authRepository.isSignedIn() -> AppRoutes.HOME
+            else -> AppRoutes.AUTHENTICATION
+        },
         useDarkTheme = useDarkTheme,
         onThemeChange = onThemeChange
     )

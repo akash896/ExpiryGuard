@@ -8,11 +8,14 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.akash.expiryguard.data.local.AppPreferences
+import com.akash.expiryguard.data.auth.FirebaseAuthRepository
 import com.akash.expiryguard.data.model.QuickAddTemplates
 import com.akash.expiryguard.data.repository.ExpiryItemRepository
 import com.akash.expiryguard.data.repository.ShoppingListRepository
 import com.akash.expiryguard.ui.screens.addedit.AddEditItemScreen
 import com.akash.expiryguard.ui.screens.addedit.AddEditItemViewModel
+import com.akash.expiryguard.ui.screens.auth.AuthViewModel
+import com.akash.expiryguard.ui.screens.auth.LoginSignUpScreen
 import com.akash.expiryguard.ui.screens.calendar.CalendarScreen
 import com.akash.expiryguard.ui.screens.calendar.CalendarViewModel
 import com.akash.expiryguard.ui.screens.detail.ItemDetailScreen
@@ -33,6 +36,7 @@ fun AppNavGraph(
     navController: NavHostController,
     repository: ExpiryItemRepository,
     shoppingListRepository: ShoppingListRepository,
+    authRepository: FirebaseAuthRepository,
     appPreferences: AppPreferences,
     startDestination: String,
     useDarkTheme: Boolean,
@@ -49,8 +53,23 @@ fun AppNavGraph(
             OnboardingScreen(
                 viewModel = viewModel,
                 onComplete = {
-                    navController.navigate(AppRoutes.HOME) {
+                    navController.navigate(AppRoutes.AUTHENTICATION) {
                         popUpTo(AppRoutes.ONBOARDING) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
+            )
+        }
+
+        composable(AppRoutes.AUTHENTICATION) {
+            val viewModel: AuthViewModel = viewModel(
+                factory = AuthViewModel.Factory(authRepository)
+            )
+            LoginSignUpScreen(
+                viewModel = viewModel,
+                onAuthenticated = {
+                    navController.navigate(AppRoutes.HOME) {
+                        popUpTo(AppRoutes.AUTHENTICATION) { inclusive = true }
                         launchSingleTop = true
                     }
                 }
